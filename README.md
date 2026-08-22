@@ -4,7 +4,7 @@
 
 **DSH ChatGPT Helm** is a DSH plugin that connects ChatGPT seamlessly to your local codebase and native DeepSeek Harness execution sessions.
 
-Instead of forcing your coding agent to repeatedly read the repository, rebuild context, and burn tokens on architectural reasoning, Helm Offloads high-level planning to ChatGPT—leaving DSH focused strictly on high-speed execution.
+Instead of forcing your coding agent to repeatedly read the repository, rebuild context, and burn tokens on architectural reasoning, Helm offloads high-level planning to ChatGPT—leaving DSH focused strictly on high-speed execution.
 
 ```text
        ┌─────────────────────────────────────────┐
@@ -26,7 +26,6 @@ Instead of forcing your coding agent to repeatedly read the repository, rebuild 
                                           │
                                           ▼
                                    [ Edit / Run / Test ]
-
 ```
 
 ---
@@ -42,66 +41,56 @@ Instead of forcing your coding agent to repeatedly read the repository, rebuild 
 
 ## How It Works
 
-DSH ChatGPT Helm manages the runtime bridge between ChatGPT, Serena (for read-only code intelligence), and DeepSeek Harness (for code execution). You do **not** need to manually spin up local servers, handle authentication proxies, or configure local tunnels.
+DSH ChatGPT Helm manages the runtime bridge between ChatGPT, Serena for read-only code intelligence, and DeepSeek Harness for code execution. You do **not** need to manually start local services or configure the components separately.
 
 ---
 
 ## Prerequisites
 
-Ensure the following tools are installed in your environment:
+Ensure the following tools are installed:
 
 * **Node.js:** `v22.0.0+`
-* **Package Manager:** `pnpm`
 * **Core Tools:** `dsh`, `serena`, `tunnel-client`
 
-Verify setup:
+Verify the setup:
 
 ```bash
 node --version
-pnpm --version
 dsh --version
 serena --help
 tunnel-client --version
-
 ```
 
-### Quick Tool Setup (If missing)
+### Install Serena If Missing
 
 ```bash
-# Install pnpm
-npm install -g pnpm
-
-# Install Serena
 uv tool install -p 3.13 serena-agent
 serena init
-
 ```
 
 ---
 
 ## Installation
 
-Install the plugin directly into your DSH Web profile:
+Install the plugin into your DSH Web profile:
 
 ```bash
 dsh plugin --profile web add @beforewave/dsh-chatgpt-helm
-
 ```
 
-*(The underlying core runtime `@beforewave/agent-chatgpt-helm` will be resolved and installed automatically).*
+The Core package, `@beforewave/agent-chatgpt-helm`, is installed automatically.
 
 ---
 
 ## Tunnel Configuration
 
-1. **Create Tunnel:** Set up a Secure MCP Tunnel in the **OpenAI Platform** under the target ChatGPT workspace.
-2. **Generate Key:** Create a Runtime API Key with `Tunnels Read` and `Tunnels Use` permissions.
-3. **Set Environment Variables:** Export credentials prior to launching DSH:
+1. Create a Secure MCP Tunnel in the OpenAI Platform.
+2. Create a Runtime API key with `Tunnels Read` and `Tunnels Use` permissions.
+3. Export the credentials before starting DSH:
 
 ```bash
 export CONTROL_PLANE_TUNNEL_ID="tunnel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 export CONTROL_PLANE_API_KEY="sk-..."
-
 ```
 
 ---
@@ -109,49 +98,50 @@ export CONTROL_PLANE_API_KEY="sk-..."
 ## ChatGPT Connection Setup
 
 1. Open **ChatGPT** ➔ **Settings** ➔ **Connectors**.
-2. Add a new connector using **Tunnel**.
-3. Select the tunnel matching your `CONTROL_PLANE_TUNNEL_ID`.
+2. Add a connector using **Tunnel**.
+3. Select the tunnel matching `CONTROL_PLANE_TUNNEL_ID`.
 
 ---
 
-## Usage Workflow
+## Usage
 
-1. Start DSH Web normally:
+Start DSH Web normally:
+
 ```bash
 dsh web
-
 ```
 
+You can then use ChatGPT to inspect the project, design an implementation, delegate execution to DSH, and review the completed changes.
 
-2. Interact with ChatGPT using high-level intent prompts:
+---
 
-* **Phase 1: Analysis**
-> *"Inspect this repository and explain the project architecture. Do not edit files yet."*
+## Standalone Helm Service
 
+`@beforewave/agent-chatgpt-helm` can also run independently as a shared Helm service for multiple local agents.
 
-* **Phase 2: Planning & Handoff**
-> *"Design the solution for parallel execution stages. Once the plan is solid, have DSH implement it and run test suites."*
+When used with DSH, `@beforewave/dsh-chatgpt-helm` starts and manages the Helm service automatically. If a standalone service is already running, the DSH plugin connects to it instead of starting another instance.
 
+Project configuration can be placed in:
 
-* **Phase 3: Verification**
-> *"Inspect the diff and verify if the implementation satisfies all original requirements."*
+```text
+.agent-chatgpt-helm/config.yml
+```
 
-
+DSH plugin configuration can override the Core configuration when Helm is managed by DSH. Existing Serena project configuration remains compatible.
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Cause / Check | Solution |
-| --- | --- | --- |
-| **Tunnel Fails to Start** | Missing credentials or missing `tunnel-client` | Verify `echo $CONTROL_PLANE_TUNNEL_ID` and ensure `tunnel-client --version` works. |
-| **ChatGPT Cannot Connect** | Tunnel ID mismatch | Ensure ChatGPT Connector uses the exact ID defined in `CONTROL_PLANE_TUNNEL_ID`. Check Admin logs in console output. |
+| Symptom | Solution |
+| --- | --- |
+| **Tunnel fails to start** | Verify `CONTROL_PLANE_TUNNEL_ID`, `CONTROL_PLANE_API_KEY`, and `tunnel-client --version`. |
+| **ChatGPT cannot connect** | Ensure the ChatGPT connector uses the same tunnel ID configured locally. |
 
 ---
 
 ## License & Status
 
-**Open Source Coming Soon.**
+The npm packages are publicly available. Their source code repositories remain private for now and are planned to be open-sourced in the future.
 
-Core components and source files are being prepped for public release. Powered by [`@beforewave/agent-chatgpt-helm`](https://www.npmjs.com/package/@beforewave/agent-chatgpt-helm).
-
+Powered by [`@beforewave/agent-chatgpt-helm`](https://www.npmjs.com/package/@beforewave/agent-chatgpt-helm).
