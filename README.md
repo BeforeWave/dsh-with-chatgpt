@@ -1,72 +1,111 @@
-# DSH ChatGPT Helm
+<p align="right">
+  <a href="./README.md">English</a> | <a href="./README.zh-CN.md">中文</a>
+</p>
 
-> Use ChatGPT as the remote reasoning brain for DeepSeek Harness (DSH).
+# DSH with ChatGPT
 
-**DSH ChatGPT Helm** is a DSH plugin that connects ChatGPT seamlessly to your local codebase and native DeepSeek Harness execution sessions.
+> **Bring ChatGPT’s reasoning to your local codebase. Work directly, or delegate larger tasks to DSH.**
 
-Instead of forcing your coding agent to repeatedly read the repository, rebuild context, and burn tokens on architectural reasoning, Helm offloads high-level planning to ChatGPT—leaving DSH focused strictly on high-speed execution.
+**DSH with ChatGPT** connects ChatGPT to your local codebase and native DeepSeek Harness execution sessions.
+
+ChatGPT can inspect the real project, understand code structure, diagnose issues, and reason from actual repository context instead of pasted snippets.
+
+For focused changes, ChatGPT can work directly. For larger or execution-heavy tasks, it can delegate implementation to DSH and independently review the result afterward.
 
 ```text
-       ┌─────────────────────────────────────────┐
-       │                ChatGPT                  │
-       │  (Read project ➔ Architect ➔ Debug ➔ Plan)│
-       └────────────────────┬────────────────────┘
-                            │ OpenAI Secure MCP Tunnel
-                            ▼
-       ┌─────────────────────────────────────────┐
-       │          DSH ChatGPT Helm               │
-       └──────┬───────────────────────────┬──────┘
-              │                           │
-  Read-Only   │                           │ Native Execution
-              ▼                           ▼
-       ┌──────────────┐            ┌──────────────┐
-       │   Serena     │            │ DeepSeek     │
-       │ (Code Intel) │            │ Harness      │
-       └──────────────┘            └──────┬───────┘
-                                          │
-                                          ▼
-                                   [ Edit / Run / Test ]
+                         ChatGPT
+                Understand · Reason · Review
+                           │
+                  Secure MCP Tunnel
+                           │
+                           ▼
+                       Agent Helm
+                           │
+                    Local Codebase
+                     /          \
+                    /            \
+           Work directly       Delegate
+                                  │
+                                  ▼
+                                 DSH
+                           Edit · Run · Test
+                                  │
+                                  ▼
+                           ChatGPT Review
 ```
 
 ---
 
-## Key Benefits
+## Why DSH with ChatGPT
 
-* **ChatGPT for Deep Reasoning:** Let ChatGPT perform symbol inspection, architecture reviews, and issue diagnosis directly against your actual project code without manually copying context.
-* **Save DSH Execution Tokens:** Avoid wasting agent context windows on code discovery. Hand over a fully drafted, step-by-step implementation plan directly to DSH.
-* **Native DSH Sessions:** Every task initiated by ChatGPT creates a native DSH session. Take over at any point via DSH Web.
-* **Independent Code Review:** Once DSH finishes, ChatGPT can inspect the modified workspace and perform an objective post-implementation verification.
+### Reason over real code
+
+Let ChatGPT inspect your actual repository, symbols, references, diagnostics, and project structure instead of manually copying code into a conversation.
+
+### Work directly when it makes sense
+
+For focused changes, ChatGPT can inspect, modify, and verify the code itself without starting another coding agent.
+
+### Delegate larger tasks to DSH
+
+For longer edit / build / test loops, ChatGPT can first understand the problem and implementation direction, then hand execution to a native DSH session.
+
+### Review independently
+
+After DSH finishes, ChatGPT can inspect the resulting code and diff independently to catch incomplete implementations, regressions, and missing edge cases.
 
 ---
 
 ## How It Works
 
-DSH ChatGPT Helm manages the runtime bridge between ChatGPT, Serena for read-only code intelligence, and DeepSeek Harness for code execution. You do **not** need to manually start local services or configure the components separately.
+For smaller tasks:
+
+```text
+ChatGPT
+   ↓
+Agent Helm
+   ↓
+Inspect · Reason · Edit · Verify
+```
+
+For larger tasks:
+
+```text
+ChatGPT
+   ↓
+Inspect · Understand · Plan
+   ↓
+Delegate to DSH
+   ↓
+Native DSH Session
+   ↓
+Edit · Run · Test · Iterate
+   ↓
+ChatGPT Review
+```
+
+ChatGPT does not have to become another terminal-first coding agent.
+
+It can use its reasoning directly against the real project, handle focused work itself, and bring that understanding to DSH when a task needs sustained local execution.
 
 ---
 
-## Prerequisites
+## Requirements
 
-Ensure the following tools are installed:
+DSH with ChatGPT currently depends on:
 
-* **Node.js:** `v22.0.0+`
-* **Core Tools:** `dsh`, `serena`, `tunnel-client`
+* **Node.js 22+**
+* **DeepSeek Harness (`dsh`)**
+* **Serena**
+* **OpenAI `tunnel-client`**
 
-Verify the setup:
+You do not need to manually install and configure every dependency before getting started.
 
-```bash
-node --version
-dsh --version
-serena --help
-tunnel-client --version
-```
+**DSH with ChatGPT checks the local environment and guides you through missing dependencies, with one-click setup where supported.**
 
-### Install Serena If Missing
+If you want to understand or configure the underlying components manually, see:
 
-```bash
-uv tool install -p 3.13 serena-agent
-serena init
-```
+* [Setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099)
 
 ---
 
@@ -75,73 +114,152 @@ serena init
 Install the plugin into your DSH Web profile:
 
 ```bash
-dsh plugin --profile web add @beforewave/dsh-chatgpt-helm
+dsh plugin --profile web add @beforewave/dsh-with-chatgpt
 ```
 
-The Core package, `@beforewave/agent-chatgpt-helm`, is installed automatically.
+`@beforewave/agent-helm` is installed automatically as the underlying local capability service.
+
+Start DSH normally:
+
+```bash
+dsh web
+```
+
+DSH with ChatGPT will check the required local components and guide you through the remaining setup.
 
 ---
 
-## Tunnel Configuration
+## Connect ChatGPT
 
-1. Create a Secure MCP Tunnel in the OpenAI Platform.
-2. Create a Runtime API key with `Tunnels Read` and `Tunnels Use` permissions.
-3. Export the credentials before starting DSH:
+DSH with ChatGPT uses **OpenAI Secure MCP Tunnel** to connect ChatGPT to Agent Helm on your local machine.
+
+```text
+ChatGPT
+   ↓
+OpenAI Secure MCP Tunnel
+   ↓
+tunnel-client
+   ↓
+Agent Helm
+   ↓
+Local Codebase / DSH
+```
+
+Create a Secure MCP Tunnel and a Runtime API key with:
+
+* `Tunnels Read`
+* `Tunnels Use`
+
+Then provide the runtime with:
 
 ```bash
 export CONTROL_PLANE_TUNNEL_ID="tunnel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 export CONTROL_PLANE_API_KEY="sk-..."
 ```
 
----
+In ChatGPT:
 
-## ChatGPT Connection Setup
+1. Enable **Developer Mode**.
+2. Open **Settings** and add a custom App / Connector.
+3. Choose **Tunnel** as the connection type.
+4. Select the same Secure MCP Tunnel.
 
-1. Open **ChatGPT** ➔ **Settings** ➔ **Connectors**.
-2. Add a connector using **Tunnel**.
-3. Select the tunnel matching `CONTROL_PLANE_TUNNEL_ID`.
+Once connected, ChatGPT can access the capabilities exposed by Agent Helm.
+
+For detailed manual setup, use the [English setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099).
 
 ---
 
 ## Usage
 
-Start DSH Web normally:
+Use ChatGPT normally against the project where DSH is running.
 
-```bash
-dsh web
-```
-
-You can then use ChatGPT to inspect the project, design an implementation, delegate execution to DSH, and review the completed changes.
-
----
-
-## Standalone Helm Service
-
-`@beforewave/agent-chatgpt-helm` can also run independently as a shared Helm service for multiple local agents.
-
-When used with DSH, `@beforewave/dsh-chatgpt-helm` starts and manages the Helm service automatically. If a standalone service is already running, the DSH plugin connects to it instead of starting another instance.
-
-Project configuration can be placed in:
+For example:
 
 ```text
-.agent-chatgpt-helm/config.yml
+Investigate why this authentication flow occasionally refreshes twice.
+
+Read the relevant implementation first, trace the important code paths,
+and explain the root cause. Fix it and verify the change.
 ```
 
-DSH plugin configuration can override the Core configuration when Helm is managed by DSH. Existing Serena project configuration remains compatible.
+For a larger task:
+
+```text
+Read the current implementation and work out how this feature should be added.
+
+Once you understand the affected architecture, delegate the implementation
+to DSH and review the completed changes afterward.
+```
+
+For an independent review:
+
+```text
+Review the changes DSH just made.
+
+Inspect the actual modified code and diff independently.
+Check for correctness issues, regressions, missing edge cases,
+and incomplete tests.
+```
+
+The workflow does not require every task to go through DSH.
+
+ChatGPT can work directly when that is the simpler path and delegate when sustained execution is more appropriate.
 
 ---
 
-## Troubleshooting
+## Native DSH Sessions
 
-| Symptom | Solution |
-| --- | --- |
-| **Tunnel fails to start** | Verify `CONTROL_PLANE_TUNNEL_ID`, `CONTROL_PLANE_API_KEY`, and `tunnel-client --version`. |
-| **ChatGPT cannot connect** | Ensure the ChatGPT connector uses the same tunnel ID configured locally. |
+Tasks delegated from ChatGPT run as native DeepSeek Harness sessions.
+
+You can open them in DSH Web at any time to:
+
+* inspect progress;
+* continue the session yourself;
+* take over when necessary;
+* review what the agent did;
+* preserve the normal DSH workflow and session history.
+
+DSH remains a first-class coding environment rather than a hidden background executor.
 
 ---
 
-## License & Status
+## Agent Helm
 
-The npm packages are publicly available. Their source code repositories remain private for now and are planned to be open-sourced in the future.
+[`@beforewave/agent-helm`](https://www.npmjs.com/package/@beforewave/agent-helm) is the local capability layer behind DSH with ChatGPT.
 
-Powered by [`@beforewave/agent-chatgpt-helm`](https://www.npmjs.com/package/@beforewave/agent-chatgpt-helm).
+It gives ChatGPT access to capabilities such as:
+
+* repository and file inspection;
+* code search;
+* symbol and reference navigation;
+* diagnostics;
+* focused code modification;
+* controlled local command execution;
+* local agent integration.
+
+Serena is currently used as the primary code-intelligence provider behind Agent Helm.
+
+Agent Helm can also run independently as a shared local capability layer for other integrations. When used through DSH with ChatGPT, the plugin manages it automatically.
+
+---
+
+## Packages
+
+### `@beforewave/dsh-with-chatgpt`
+
+The DSH integration and user-facing experience.
+
+### `@beforewave/agent-helm`
+
+The underlying local capability layer connecting ChatGPT to code intelligence, local execution, and coding agents.
+
+---
+
+## Status
+
+DSH with ChatGPT and Agent Helm are under active development.
+
+The current goal is simple:
+
+> **Let ChatGPT understand the real project, work directly when appropriate, and bring that reasoning to DSH when larger execution is needed.**
