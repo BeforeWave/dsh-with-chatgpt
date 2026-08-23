@@ -55,7 +55,7 @@ After DSH finishes, ChatGPT can inspect the resulting code and diff independentl
 
 ## How It Works
 
-For smaller tasks:
+For focused tasks:
 
 ```text
 ChatGPT
@@ -214,7 +214,7 @@ You can open them in DSH Web at any time to:
 * inspect progress;
 * continue the session yourself;
 * take over when necessary;
-* review what the agent did;
+* review the agent's work;
 * preserve the normal DSH workflow and session history.
 
 DSH remains a first-class coding environment rather than a hidden background executor.
@@ -257,14 +257,4 @@ The underlying local capability layer connecting ChatGPT to code intelligence, l
 
 DSH with ChatGPT and Agent Helm are under active development.
 
-The current goal is simple:
-
 > **Let ChatGPT understand the real project, work directly when appropriate, and bring that reasoning to DSH when larger execution is needed.**
-
----
-
-## Source Status
-
-The npm packages are publicly available.
-
-The implementation source will be opened progressively as the project matures.
