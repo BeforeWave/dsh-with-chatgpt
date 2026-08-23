@@ -20,18 +20,15 @@ For focused changes, ChatGPT can work directly. For larger or execution-heavy ta
                            │
                            ▼
                        Agent Helm
-                           │
-                    Local Codebase
-                     /          \
-                    /            \
-           Work directly       Delegate
-                                  │
-                                  ▼
-                                 DSH
-                           Edit · Run · Test
-                                  │
-                                  ▼
-                           ChatGPT Review
+                      /          \
+                     /            \
+            Work directly       Delegate
+                 │                 │
+                 ▼                 ▼
+           Local Codebase          DSH
+                 ▲           Edit · Run · Test
+                 │                 │
+                 └─────────────────┘
 ```
 
 ---
@@ -40,7 +37,7 @@ For focused changes, ChatGPT can work directly. For larger or execution-heavy ta
 
 ### Reason over real code
 
-Let ChatGPT inspect your actual repository, symbols, references, diagnostics, and project structure instead of manually copying code into a conversation.
+Let ChatGPT inspect your actual repository, code structure, symbols, references, and diagnostics instead of manually copying code into a conversation.
 
 ### Work directly when it makes sense
 
@@ -52,7 +49,7 @@ For longer edit / build / test loops, ChatGPT can first understand the problem a
 
 ### Review independently
 
-After DSH finishes, ChatGPT can inspect the resulting code and diff independently to catch incomplete implementations, regressions, and missing edge cases.
+After DSH finishes, ChatGPT can inspect the resulting code and diff independently to catch incomplete implementations, regressions, missing edge cases, and test gaps.
 
 ---
 
@@ -84,9 +81,7 @@ Edit · Run · Test · Iterate
 ChatGPT Review
 ```
 
-ChatGPT does not have to become another terminal-first coding agent.
-
-It can use its reasoning directly against the real project, handle focused work itself, and bring that understanding to DSH when a task needs sustained local execution.
+ChatGPT can reason directly against the real project, handle focused work itself, and bring that understanding to DSH when a task needs sustained local execution.
 
 ---
 
@@ -101,11 +96,9 @@ DSH with ChatGPT currently depends on:
 
 You do not need to manually install and configure every dependency before getting started.
 
-**DSH with ChatGPT checks the local environment and guides you through missing dependencies, with one-click setup where supported.**
+**DSH with ChatGPT checks the local environment and guides you through missing dependencies, including one-click installation where supported.**
 
-If you want to understand or configure the underlying components manually, see:
-
-* [Setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099)
+If you want to understand or reproduce the underlying setup manually, see the [manual setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099).
 
 ---
 
@@ -125,13 +118,13 @@ Start DSH normally:
 dsh web
 ```
 
-DSH with ChatGPT will check the required local components and guide you through the remaining setup.
+DSH with ChatGPT will check the local environment and guide you through the remaining setup.
 
 ---
 
 ## Connect ChatGPT
 
-DSH with ChatGPT uses **OpenAI Secure MCP Tunnel** to connect ChatGPT to Agent Helm on your local machine.
+DSH with ChatGPT uses **OpenAI Secure MCP Tunnel** to connect ChatGPT to Agent Helm running on your local machine.
 
 ```text
 ChatGPT
@@ -145,19 +138,23 @@ Agent Helm
 Local Codebase / DSH
 ```
 
-Create a Secure MCP Tunnel and a Runtime API key with:
+You will need:
 
-* `Tunnels Read`
-* `Tunnels Use`
+* an OpenAI Secure MCP Tunnel;
+* its Tunnel ID;
+* a Runtime API key with:
 
-Then provide the runtime with:
+  * `Tunnels Read`
+  * `Tunnels Use`
+
+Provide the credentials to the runtime:
 
 ```bash
 export CONTROL_PLANE_TUNNEL_ID="tunnel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 export CONTROL_PLANE_API_KEY="sk-..."
 ```
 
-In ChatGPT:
+Then in ChatGPT:
 
 1. Enable **Developer Mode**.
 2. Open **Settings** and add a custom App / Connector.
@@ -166,7 +163,7 @@ In ChatGPT:
 
 Once connected, ChatGPT can access the capabilities exposed by Agent Helm.
 
-For detailed manual setup, use the [English setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099).
+For the complete manual setup process, see the [setup guide](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099).
 
 ---
 
@@ -174,13 +171,13 @@ For detailed manual setup, use the [English setup guide](https://gist.github.com
 
 Use ChatGPT normally against the project where DSH is running.
 
-For example:
+For a focused task:
 
 ```text
 Investigate why this authentication flow occasionally refreshes twice.
 
 Read the relevant implementation first, trace the important code paths,
-and explain the root cause. Fix it and verify the change.
+explain the root cause, then fix it and verify the change.
 ```
 
 For a larger task:
@@ -202,7 +199,7 @@ Check for correctness issues, regressions, missing edge cases,
 and incomplete tests.
 ```
 
-The workflow does not require every task to go through DSH.
+Not every task needs to go through DSH.
 
 ChatGPT can work directly when that is the simpler path and delegate when sustained execution is more appropriate.
 
@@ -236,11 +233,11 @@ It gives ChatGPT access to capabilities such as:
 * diagnostics;
 * focused code modification;
 * controlled local command execution;
-* local agent integration.
+* local coding-agent integration.
 
-Serena is currently used as the primary code-intelligence provider behind Agent Helm.
+Serena is currently the primary code-intelligence provider behind Agent Helm.
 
-Agent Helm can also run independently as a shared local capability layer for other integrations. When used through DSH with ChatGPT, the plugin manages it automatically.
+Agent Helm can also run independently as a shared local capability layer. When used through DSH with ChatGPT, the plugin manages it automatically.
 
 ---
 
@@ -263,3 +260,11 @@ DSH with ChatGPT and Agent Helm are under active development.
 The current goal is simple:
 
 > **Let ChatGPT understand the real project, work directly when appropriate, and bring that reasoning to DSH when larger execution is needed.**
+
+---
+
+## Source Status
+
+The npm packages are publicly available.
+
+The implementation source will be opened progressively as the project matures.
