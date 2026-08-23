@@ -4,7 +4,7 @@
 
 # DSH with ChatGPT
 
-> **把 ChatGPT 的推理能力带进你的本地代码库：小任务ChatGPT直接做，大任务交给 DSH。**
+> **把 ChatGPT 的推理能力带进你的本地代码库：小任务直接做，大任务交给 DSH。**
 
 **DSH with ChatGPT** 把 ChatGPT 连接到你的真实本地代码库和 DeepSeek Harness 原生执行 Session。
 
@@ -20,27 +20,24 @@ ChatGPT 不再只能依赖你复制进去的代码片段，而是可以直接读
                             │
                             ▼
                         Agent Helm
-                            │
-                       本地代码库
-                      /          \
-                     /            \
-               直接处理          委派
-                                   │
-                                   ▼
-                                  DSH
-                            编辑 · 运行 · 测试
-                                   │
-                                   ▼
-                            ChatGPT Review
+                       /          \
+                      /            \
+                 直接处理           委派
+                   │                │
+                   ▼                ▼
+                本地代码库           DSH
+                   ▲          编辑 · 运行 · 测试
+                   │                │
+                   └────────────────┘
 ```
 
 ---
 
 ## 为什么需要 DSH with ChatGPT
 
-### 让 ChatGPT 真正读懂项目
+### 让 ChatGPT 真正理解项目
 
-ChatGPT 可以直接读取真实 Repository、代码结构、Symbols、References 和 Diagnostics，不再需要手工复制大量代码和错误信息到对话里。
+ChatGPT 可以直接读取真实仓库、代码结构、符号、引用和诊断信息，不再需要手工复制大量代码和错误信息到对话里。
 
 ### 合适的小任务直接做
 
@@ -84,9 +81,7 @@ ChatGPT
 ChatGPT Review
 ```
 
-这里并不是要把 ChatGPT 强行变成另一个终端 Coding Agent。
-
-更重要的是让 ChatGPT 的推理真正建立在本地工程事实上：适合直接完成的事情自己完成，需要长时间机械执行的事情再交给 DSH。
+ChatGPT 可以直接基于真实工程进行推理，自己完成合适的任务；需要持续执行时，再把已经建立好的理解和方案带给 DSH。
 
 ---
 
@@ -103,9 +98,7 @@ DSH with ChatGPT 当前依赖：
 
 **DSH with ChatGPT 会检查本地环境，在缺少依赖时引导完成配置，并在支持的场景提供一键安装。**
 
-如果你希望了解底层组件如何手工安装和配置，可以参考：
-
-* [配置参考](https://gist.github.com/tonyzhu/933704e4fba6cb4938ebfa3b16683b4a)
+如果你希望了解或手工完成底层配置，可以参考 [ChatGPT + Serena + OpenAI Secure MCP Tunnel 中文配置指南](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099#file-readme-zh-cn-md)。
 
 ---
 
@@ -131,7 +124,7 @@ DSH with ChatGPT 会检查本地运行环境，并引导完成剩余配置。
 
 ## 连接 ChatGPT
 
-DSH with ChatGPT 使用 **OpenAI Secure MCP Tunnel** 将 ChatGPT 安全连接到本机的 Agent Helm。
+DSH with ChatGPT 使用 **OpenAI Secure MCP Tunnel** 将 ChatGPT 安全连接到本机运行的 Agent Helm。
 
 ```text
 ChatGPT
@@ -148,6 +141,7 @@ Agent Helm
 需要准备：
 
 * 一个 OpenAI Secure MCP Tunnel；
+* 对应的 Tunnel ID；
 * 一个 Runtime API Key，并授予：
 
   * `Tunnels Read`
@@ -169,7 +163,7 @@ export CONTROL_PLANE_API_KEY="sk-..."
 
 连接完成后，ChatGPT 就可以使用 Agent Helm 暴露的本地能力。
 
-需要完整的手工配置过程时，可以参考 [中文配置参考](https://gist.github.com/tonyzhu/933704e4fba6cb4938ebfa3b16683b4a)。
+需要完整手工配置流程时，可以参考 [中文配置指南](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099#file-readme-zh-cn-md)。
 
 ---
 
@@ -177,7 +171,7 @@ export CONTROL_PLANE_API_KEY="sk-..."
 
 直接在运行 DSH 的项目上和 ChatGPT 对话即可。
 
-例如排查问题：
+例如排查并修复一个问题：
 
 ```text
 看看为什么这个 authentication flow 偶尔会 refresh 两次。
@@ -192,7 +186,7 @@ export CONTROL_PLANE_API_KEY="sk-..."
 先读取现在的实现，搞清楚这个功能应该怎么加。
 
 理解涉及的架构和修改范围后，把实现交给 DSH，
-完成后你再独立 review 一遍。
+完成后你再独立 Review 一遍。
 ```
 
 也可以直接让 ChatGPT Review DSH 的结果：
@@ -200,7 +194,7 @@ export CONTROL_PLANE_API_KEY="sk-..."
 ```text
 Review 一下 DSH 刚做完的修改。
 
-自己重新读取实际代码和 diff，
+自己重新读取实际代码和 Diff，
 检查正确性、遗漏的边界情况、潜在回归和测试缺失。
 ```
 
@@ -220,9 +214,10 @@ Review 一下 DSH 刚做完的修改。
 * 查看 Agent 正在做什么；
 * 自己继续 Session；
 * 必要时直接接手；
+* Review Agent 的工作；
 * 保留完整的 DSH 原生工作流和 Session 历史。
 
-DSH 不是一个隐藏在后台的执行器，而仍然是可以随时进入和接管的完整 Coding Agent 环境。
+DSH 不是隐藏在后台的执行器，而仍然是可以随时进入和接管的完整 Coding Agent 环境。
 
 ---
 
@@ -232,7 +227,7 @@ DSH 不是一个隐藏在后台的执行器，而仍然是可以随时进入和�
 
 它负责把本地工程能力提供给 ChatGPT，包括：
 
-* Repository 和文件读取；
+* 仓库和文件读取；
 * 代码搜索；
 * Symbol / Reference 导航；
 * Diagnostics；
@@ -265,3 +260,11 @@ DSH with ChatGPT 和 Agent Helm 都在持续开发中。
 目前最核心的目标很简单：
 
 > **让 ChatGPT 真正理解你的本地项目；合适的事情直接做，更大的执行任务则把已经建立好的理解和推理带给 DSH。**
+
+---
+
+## 源码状态
+
+npm Packages 已公开发布。
+
+项目实现源码会随着项目成熟逐步开放。
