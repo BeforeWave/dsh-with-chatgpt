@@ -45,6 +45,7 @@ ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是能够直
 
 ### 以dsh-plugin的形态作为UI
 
+<img width="1080" height="852" alt="bae78bd73882abe6a2a4ae70d171367f" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
 <img width="886" height="696" alt="19459a7e4525e912d4a70cd508b8d829" src="https://github.com/user-attachments/assets/b640327b-9cb4-4031-b076-c2d077b300f5" />
 <img width="855" height="661" alt="c2922a065866fb172d380505069f2e2a" src="https://github.com/user-attachments/assets/2d34142f-df90-4cf0-9ec1-b3779baced0b" />
 
