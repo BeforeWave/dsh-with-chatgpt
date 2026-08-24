@@ -43,6 +43,14 @@ For targeted, scoped modifications, ChatGPT acts directly. For heavy, iteration-
 
 ---
 
+## DSH-plugin as UI
+
+<img width="877" height="621" alt="74bfadbdf7f558489bd2a00a6cee273b" src="https://github.com/user-attachments/assets/0265b053-5202-4fa4-9b52-94a7ca3b82d5" />
+
+<img width="893" height="635" alt="9a4fe613a737fdd130c0f7200a67e38f" src="https://github.com/user-attachments/assets/e80b3a50-c68c-41c5-a80f-afec2b13fa1b" />
+
+---
+
 ## How It Works
 
 **Focused & Scoped Tasks:**
