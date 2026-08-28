@@ -1,5 +1,5 @@
 <p align="right">
-  <a href="./README.md"><b>English</b></a> | <a href="./README.zh-CN.md">中文</a>
+  <a href="./README.en.md"><b>English</b></a> | <a href="./README.md">中文</a>
 </p>
 
 # DSH with ChatGPT
