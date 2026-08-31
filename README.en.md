@@ -172,7 +172,6 @@ DSH with ChatGPT integrates directly into DSH Web.
 
 <img width="1080" height="852" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
 
-<img width="886" height="696" alt="DSH with ChatGPT Work UI" src="https://github.com/user-attachments/assets/b640327b-9cb4-4031-b076-c2d077b300f5" />
 
 ## Quick Start
 
