@@ -166,11 +166,13 @@ The complete security model and reproducible Security / Conformance Tests are ma
 
 DSH with ChatGPT integrates directly into DSH Web.
 
+<img width="2140" height="1432" alt="20260831230950" src="https://github.com/user-attachments/assets/be286d62-3a67-4e5f-b3be-935495c89ac4" />
+
+<img width="2878" height="1920" alt="20260831230933" src="https://github.com/user-attachments/assets/3ae6da99-3c69-4c4f-b91e-94ddd6a1e7a3" />
+
 <img width="1080" height="852" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
 
 <img width="886" height="696" alt="DSH with ChatGPT Work UI" src="https://github.com/user-attachments/assets/b640327b-9cb4-4031-b076-c2d077b300f5" />
-
-<img width="855" height="661" alt="DSH with ChatGPT Session UI" src="https://github.com/user-attachments/assets/2d34142f-df90-4cf0-9ec1-b3779baced0b" />
 
 ## Quick Start
 
@@ -189,6 +191,8 @@ dsh web
 Agent Helm is installed alongside the plugin as its local capability and secure execution layer.
 
 First run may still require a few local dependencies, Tunnel settings, or ChatGPT connection steps. DSH with ChatGPT checks the current environment and walks you through the required installation, connection, and authorization flow.
+
+<img width="2776" height="1984" alt="20260831230831" src="https://github.com/user-attachments/assets/9d2c246a-a960-4c12-a019-39174db7a52f" />
 
 **You do not need to leave the product to hunt through installation docs, piece together environment variables, or figure out third-party configuration on your own.**
 
