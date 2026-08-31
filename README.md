@@ -4,19 +4,19 @@
 
 # DSH with ChatGPT
 
-> **把 ChatGPT 的推理能力带进本地代码库：小任务直接修复，大任务交给 DSH。**
+> **把 ChatGPT 的推理能力带进本地工作区：小任务直接修复，大任务交给 DSH。**
 
-**DSH with ChatGPT** 将 ChatGPT 深度接入你的本地代码库与 DeepSeek Harness (DSH) 原生执行 Session。
+我们把 ChatGPT 从云端请到了本地，也把它放进了沙盒。
 
-ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是能够直接读取工程结构、追踪符号与引用、分析诊断信息，基于真实工程上下文进行深入推理。
+**DSH with ChatGPT** 将 ChatGPT 深度接入你的真实本地工作区与 DeepSeek Harness（DSH）原生执行 Session。
 
-对于明确而集中的修改，ChatGPT 可直接完成；对于范围较大、需要反复构建测试的任务，由 ChatGPT 梳理方案后交由 DSH 原生 Session 持续执行，并在完成后进行独立 Code Review。
+ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是可以直接理解工作区中的代码、配置、测试、文档、Git 状态和工程工具，追踪符号与引用、分析诊断信息，并基于真实项目上下文进行推理和工作。
+
+对于明确而集中的修改，ChatGPT 可以直接完成；对于范围更大、需要反复编辑、构建和测试的任务，ChatGPT 先理解问题和工程，再把具体执行交给 DSH。任务完成后，ChatGPT 重新读取真实代码和 Git Diff，独立 Review 结果。
 
 ```text
                          ChatGPT
                    理解 · 推理 · Review
-                            │
-                  Secure MCP Tunnel
                             │
                             ▼
                         Agent Helm
@@ -25,192 +25,224 @@ ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是能够直
                  直接处理           委派
                    │                │
                    ▼                ▼
-                本地代码库           DSH
-                   ▲          编辑 · 运行 · 测试
-                   │          (随时可人工接管)
+                本地工作区           DSH
+                   ▲          Edit · Run · Test
+                   │          随时人工接管
                    └────────────────┘
-
 ```
 
----
+## 核心体验
 
-## 核心特性
+### 真实工作区感知
 
-* **真实代码库感知**：直接读取本地仓库结构、符号引用与诊断信息，无需手动复制粘贴代码与报错。
-* **轻量任务直接处理**：对局部修改与针对性重构，ChatGPT 自动完成代码检查、编辑与验证，免去启动完整 Agent 的开销。
-* **复杂任务委派与随时接管**：涉及多文件编辑与构建测试的任务，由 ChatGPT 理清方案后自动委派给 DSH 原生 Session 持续执行——**且你可以在任意时刻随时切入并直接接管控制**。
-* **独立 Code Review**：DSH 完成任务后，ChatGPT 独立校验真实代码与 Git Diff，检查边界遗漏、潜在回归或测试缺失。
+ChatGPT 直接面对真实工作区，而不是聊天窗口里的代码片段。
 
----
+它可以理解：
 
-### 以dsh-plugin的形态作为UI
+- 源代码
+- 配置与脚本
+- 测试
+- 文档
+- Git / Worktree 状态
+- 工程诊断
+- 本地工具链
+- 项目运行上下文
 
-<img width="1080" height="852" alt="bae78bd73882abe6a2a4ae70d171367f" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
-<img width="886" height="696" alt="19459a7e4525e912d4a70cd508b8d829" src="https://github.com/user-attachments/assets/b640327b-9cb4-4031-b076-c2d077b300f5" />
-<img width="855" height="661" alt="c2922a065866fb172d380505069f2e2a" src="https://github.com/user-attachments/assets/2d34142f-df90-4cf0-9ec1-b3779baced0b" />
+这意味着你不再需要不断复制代码、日志和项目背景到 ChatGPT。
 
+### 小任务直接处理
 
----
-## 工作机制
+Bug 排查、局部修改、小范围重构、代码理解、验证和 Review，不需要为了每一个任务都启动完整 Coding Agent。
 
-**聚焦型轻量任务：**
+**ChatGPT 可以通过 Agent Helm 直接完成这些工作。**
 
 ```text
 ChatGPT ──► Agent Helm ──► 读取 · 推理 · 修改 · 验证
-
 ```
 
-**复杂型持续任务：**
+### 大任务交给 DSH
+
+当任务需要大量文件修改、持续构建测试或者多轮执行时，ChatGPT 可以先完成理解和规划，再把具体执行交给原生 DSH Session。
 
 ```text
-ChatGPT ──► 读取分析 · 制定方案 ──► 委派给 DSH ──► DSH 原生 Session ──► ChatGPT Review
-                                                        ▲
-                                                  (随时可人工接管)
-
+ChatGPT
+   │
+   ├── 理解真实工作区
+   ├── 分析问题
+   └── 明确执行方向
+              │
+              ▼
+          DSH Session
+              │
+        Edit · Run · Test
+              │
+              ▼
+        ChatGPT Review
 ```
 
----
+### 随时人工接管
 
-## 依赖说明
+DSH 不是隐藏在后台的黑盒执行器。
 
-本项目运行依赖以下底层组件：
+每一次委派都会创建一个真正的原生 DSH Session。你可以随时打开 DSH Web：
 
-* **Node.js**：v22+
-* **DeepSeek Harness**：(`dsh`)
-* **Serena**：代码智能分析引擎
-* **OpenAI Tunnel Client**：`tunnel-client`
+- 查看实时执行进度
+- 追加指令
+- 调整 Agent 方向
+- 手工修改代码
+- 完全接管当前 Session
 
-> **提示**：无需预先手动安装和配置上述组件。插件在启动时会自动检查本地环境，引导补全依赖，并在支持的环境下提供一键安装。如需手动配置，请参考 [中文配置指南](https://gist.github.com/tonyzhu/d7ad8c84a90ea04e5c853a3cfe4df099#file-readme-zh-cn-md)。
+> **AI 可以持续执行，但最终控制权始终属于你。**
 
----
+### ChatGPT 独立 Review
 
-## 安装说明
+执行和判断是两件不同的事情。
 
-安装插件至 DSH Web Profile：
+DSH 完成工作以后，ChatGPT 会重新读取真实代码和 Git Diff，而不是单纯相信 Agent 的完成报告。
+
+它可以继续检查：
+
+- 实现是否正确
+- 是否遗漏边界情况
+- 是否引入潜在回归
+- 测试是否充分
+- 实际修改是否符合原始目标
+
+这样形成的是完整闭环：
+
+```text
+理解 → 直接处理 / 委派执行 → 验证 → 独立 Review
+```
+
+## 安全地让 ChatGPT 真正动手
+
+把 ChatGPT 接进本地工作区，不应该等于把整台电脑交给它。
+
+DSH with ChatGPT 的所有本地工程能力都通过 **Agent Helm** 提供。
+
+目前，Agent Helm 使用 **Serena** 提供基于 LSP 的语义代码理解，使用 **Anthropic Sandbox Runtime** 作为本地执行的 sandbox enforcement backend，并默认使用 **OpenAI tunnel-client** 建立与 ChatGPT 的 Secure MCP Tunnel。具体能力边界与安全模型由 Agent Helm 定义。
+
+Agent Helm 为每一次工作建立明确的 Execution Context，并控制真实的资源权限，包括：
+
+- Workspace / Worktree
+- 文件系统读写
+- 命令执行
+- 环境变量
+- 网络访问
+- Local TCP Binding
+- Semantic 能力
+- Coding Agent 委派
+
+```text
+ChatGPT
+   │
+   ▼
+Agent Helm
+   │
+   ├── Execution Context
+   ├── Capability Policy
+   ├── Filesystem Authority
+   ├── Environment Authority
+   ├── Network Authority
+   └── Sandbox
+            │
+            ▼
+       授权的本地工作区
+```
+
+在支持的环境中，本地命令进一步运行在 enforcing sandbox 中。
+
+这不是依赖 Prompt 告诉模型“不要访问其他地方”，而是由实际执行层限制资源边界。
+
+对于无法在执行前静态判断的动态行为，Agent Helm 会让 enforcing sandbox 承担最终的资源约束。
+
+如果无法安全执行，同时又没有可用的 enforcing sandbox，则默认 **fail closed**，而不是静默退化为无限制执行。
+
+> **ChatGPT 可以真正动手，但它能访问什么、执行什么，仍然由明确的本地权限边界决定。**
+
+完整的安全模型以及可复现的 Security / Conformance Tests 由 [Agent Helm](https://github.com/BeforeWave/agent-helm) 项目统一维护。
+
+## DSH Plugin UI
+
+DSH with ChatGPT 直接集成在 DSH Web 中。
+
+<img width="1080" height="852" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
+
+<img width="886" height="696" alt="DSH with ChatGPT Work UI" src="https://github.com/user-attachments/assets/b640327b-9cb4-4031-b076-c2d077b300f5" />
+
+<img width="855" height="661" alt="DSH with ChatGPT Session UI" src="https://github.com/user-attachments/assets/2d34142f-df90-4cf0-9ec1-b3779baced0b" />
+
+## 快速开始
+
+### 1. 安装 DSH Plugin
 
 ```bash
-dsh plugin --profile web add @beforewave/dsh-with-chatgpt
-
+dsh plugin --profile web add dsh-with-chatgpt
 ```
 
-*底层组件 `@beforewave/agent-helm` 会随插件自动安装。*
-
-启动 DSH：
+### 2. 启动 DSH
 
 ```bash
 dsh web
-
 ```
 
-启动后插件将自动检查运行环境，并引导完成初始配置。
+Agent Helm 会作为底层本地能力与安全执行层一起安装。
 
----
+首次运行时可能仍需要完成一些本地依赖、Tunnel 或 ChatGPT 连接配置。DSH with ChatGPT 会检查当前环境，并通过产品界面一步步引导你完成需要的安装、连接和授权步骤。
 
-## 连接 ChatGPT
+**你不需要离开产品自己查安装文档、拼环境变量，或者研究第三方组件应该怎么配置。**
 
-插件通过 **OpenAI Secure MCP Tunnel** 将 ChatGPT 安全连接至本机运行的 `Agent Helm`。
+> **注意**
+>
+> Serena、Tunnel、浏览器连接等第三方组件的具体配置不再维护在 README 中。
+>
+> 这些配置会随着环境和版本变化，产品内的 **Setup Guide** 是权威入口。
+
+## Work History
+
+一次 AI 开发工作不只是几条命令，也不只是一个 Agent Session。
+
+DSH with ChatGPT 通过 **Agent Helm Work History**，把 ChatGPT Conversation、真实 Workspace、直接执行和委派 Session 组织到同一项 Work 下面。
 
 ```text
-ChatGPT ──► Secure MCP Tunnel ──► tunnel-client ──► Agent Helm ──► 本地代码库 / DSH
-
+ChatGPT Conversation
+        │
+        ▼
+       Work
+     /      \
+    /        \
+Direct Work  DSH / Subagent Session
 ```
 
-### 配置步骤
+你可以重新找到：
 
-1. 准备 OpenAI Secure MCP Tunnel 信息：
-* **Tunnel ID**
-* **Runtime API Key**（需具备 `Tunnels Read` 与 `Tunnels Use` 权限）
+- 这项工作来自哪个 ChatGPT Conversation
+- 使用的是哪个 Workspace / Worktree
+- ChatGPT 做过哪些直接工作
+- 是否委派给 DSH
+- 对应的原生 DSH Session
+- 最近的活动和执行状态
 
+这样一项工作可以被重新理解、继续、Review，也可以被人工接管，而不是散落在不同工具的日志里。
 
-2. 配置环境变量：
-```bash
-export CONTROL_PLANE_TUNNEL_ID="tunnel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-export CONTROL_PLANE_API_KEY="sk-..."
+## Agent Helm 产品家族
 
-```
+DSH with ChatGPT 是 Agent Helm 产品家族的一部分。
 
-
-3. 配置 ChatGPT：
-* 在 ChatGPT 中开启 **Developer Mode**（开发者模式）。
-* 进入 **Settings** -> **Apps / Connectors** -> **Add Custom Connector**。
-* 连接类型选择 **Tunnel**。
-* 选择与环境变量对应的 Secure MCP Tunnel 实例。
-
-
-
----
-
-## 使用示例
-
-### 1. 问题排查与局部修复
-
-```text
-看看为什么这个 authentication flow 偶尔会 refresh 两次。
-先读取真实实现，追一下相关代码路径与调用关系，
-告知我根因，然后直接修掉并完成验证。
-
-```
-
-### 2. 委派大任务给 DSH
-
-```text
-先读取当前实现，搞清楚这个新功能应该怎么加。
-理解涉及的架构与修改范围后，把实现工作委派给 DSH，
-完成后你再独立 Review 一遍。
-
-```
-
-### 3. 独立 Review DSH 结果
-
-```text
-Review 一下 DSH 刚做完的修改。
-重新读取实际代码与 Diff，
-检查正确性、边界情况遗漏、潜在回归与测试缺失。
-
-```
-
----
-
-## 原生 DSH Session 集成：完全掌控，随时无缝接管
-
-将任务委派给 DSH 并不意味着丢失控制权。每个委派任务都会创建一个**完整的原生 DeepSeek Harness Session**。
-
-> **⚡ 随时无缝接管：** DSH 不是隐藏在后台的“黑盒执行器”。你可以在任意时刻打开 DSH Web UI，实时查看执行进度、手动修改代码、调整 Agent 路线，或者直接完全接管整个 Session，无缝保留所有上下文与历史记录。
-
-通过 DSH Web UI，你可以：
-
-* **实时监控与方向纠偏**：观测 Agent 的执行日志与变动，必要时随时打断或重定向。
-* **随时人工接管**：在任意节点一键切入交互式环境，由人工直接完成剩余工作。
-* **保留完整工作流上下文**：保留真实的 DSH Session 状态、历史日志与工作区代码改动。
-
----
-
-## 底层架构：Agent Helm
-
-[`@beforewave/agent-helm`](https://www.npmjs.com/package/@beforewave/agent-helm) 是插件背后的本地能力引擎，为 ChatGPT 提供以下工具调用：
-
-* 本地仓库与文件读写
-* 符号（Symbol）与引用（Reference）导航
-* 代码智能与诊断分析（由 **Serena** 驱动）
-* 受控的代码修改与命令执行
-* 本地 Coding Agent 调度与 Session 委派
-
-*Agent Helm 可脱离本插件独立运行，作为共享的本地能力层使用。*
-
----
-
-## 包结构说明
-
-| 包名 | 职责描述 |
+| 项目 | 角色与定位 |
 | --- | --- |
-| **`@beforewave/dsh-with-chatgpt`** | DSH 插件集成与用户交互体验层 |
-| **`@beforewave/agent-helm`** | 本地底层能力引擎（代码导航、命令执行与 Agent 桥接） |
+| [Agent Helm](https://github.com/BeforeWave/agent-helm) | ChatGPT 的本地工程能力、安全边界与执行控制层 |
+| **DSH with ChatGPT** | ChatGPT + DSH 的完整开发工作流 |
+| [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) | 浏览器及其他用户入口扩展 |
 
----
+如果你只需要让 ChatGPT 直接、安全地操作本地工作区，而不需要 DSH，可以单独使用 **Agent Helm**。
+
+如果你主要从 ChatGPT 浏览器界面工作，可以配合 **Agent Helm Extensions** 使用。
 
 ## 项目状态
 
-DSH with ChatGPT 与 Agent Helm 均处于积极迭代开发中。
+DSH with ChatGPT 正在持续开发中。
 
+我们的目标不是让一个 Coding Agent 无限制地接管你的电脑，而是建立一套更自然的协作方式：
 
-> **让 ChatGPT 真正理解你的本地项目；合适的事情直接做，更大的执行任务则把已经建立好的理解和推理带给 DSH。**
+> **ChatGPT 负责理解、推理和 Review；合适的事情直接做，更大的执行任务交给 DSH；AI 可以真正进入本地工作区，而权限边界和最终控制权始终掌握在用户手里。**
