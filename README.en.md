@@ -127,13 +127,9 @@ While ChatGPT is working, it receives the information needed to complete the cur
 
 ## Security Boundaries
 
-DSH with ChatGPT works within the local project you authorize, with corresponding limits on file access and engineering operations.
+Local operations executed directly by ChatGPT are controlled by the permissions and Sandbox boundaries provided by [**Agent Helm**](https://github.com/BeforeWave/agent-helm).
 
-On supported environments, local commands run inside a Sandbox that restricts access to local resources such as files, commands, environment variables, and the network.
-
-If required security protection is unavailable, the related operation is rejected.
-
-These local capabilities and security boundaries are provided by [**Agent Helm**](https://github.com/BeforeWave/agent-helm), and the installation and Setup flow prepares the required environment together.
+After work is handed off to DSH, the DSH Session runs according to DSH's own configured permissions and Sandbox model.
 
 ## Work History
 

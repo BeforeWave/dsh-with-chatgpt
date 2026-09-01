@@ -129,13 +129,9 @@ ChatGPT 工作时，会收到完成当前任务所需要的信息，包括：
 
 ## 安全边界
 
-DSH with ChatGPT 在你授权的本地项目范围内工作，文件访问和工程操作受到相应的权限限制。
+ChatGPT 直接执行的本地操作由 [**Agent Helm**](https://github.com/BeforeWave/agent-helm) 的权限和 Sandbox 边界控制。
 
-在支持的环境中，本地命令运行在 Sandbox 中，对文件、命令、环境变量和网络等本地资源的访问进行限制。
-
-需要的安全保护不可用时，相关操作会被拒绝。
-
-这些本地能力和安全边界由 [**Agent Helm**](https://github.com/BeforeWave/agent-helm) 提供，安装和 Setup 流程会一起处理所需环境。
+交给 DSH 后，DSH Session 按 DSH 自身配置的权限和 Sandbox 模型执行。
 
 ## Work History
 
