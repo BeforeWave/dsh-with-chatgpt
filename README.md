@@ -13,7 +13,7 @@
 ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是可以直接理解工作区中的代码、配置、测试、文档、Git 状态和工程工具，追踪符号与引用、分析诊断信息，并基于真实项目上下文进行推理和工作。
 
 对于明确而集中的修改，ChatGPT 可以直接完成；对于范围更大、需要反复编辑、构建和测试的任务，ChatGPT 先理解问题和工程，再把具体执行交给 DSH。任务完成后，ChatGPT 重新读取真实代码和 Git Diff，独立 Review 结果。
-
+<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 ```text
                          ChatGPT
                    理解 · 推理 · Review
@@ -165,9 +165,6 @@ Agent Helm
 ## DSH Plugin UI
 
 DSH with ChatGPT 直接集成在 DSH Web 中。
-
-
-<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
 <img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
