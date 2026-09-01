@@ -13,7 +13,7 @@ We brought ChatGPT down from the cloud into your local workspace — and put it 
 ChatGPT is no longer limited to code snippets copied into a chat window. It can understand the code, configuration, tests, documentation, Git state, and engineering tools inside your workspace, trace symbols and references, inspect diagnostics, and reason against the real project context.
 
 For focused changes, ChatGPT can work directly. For larger tasks that require repeated editing, building, and testing, ChatGPT first understands the problem and the project, then hands the execution to DSH. When the work is complete, ChatGPT reads the actual code and Git Diff again and independently reviews the result.
-
+<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 ```text
                          ChatGPT
                Understand · Reason · Review
@@ -166,11 +166,8 @@ The complete security model and reproducible Security / Conformance Tests are ma
 
 DSH with ChatGPT integrates directly into DSH Web.
 
-<img width="2140" height="1432" alt="20260831230950" src="https://github.com/user-attachments/assets/be286d62-3a67-4e5f-b3be-935495c89ac4" />
 
-<img width="2878" height="1920" alt="20260831230933" src="https://github.com/user-attachments/assets/3ae6da99-3c69-4c4f-b91e-94ddd6a1e7a3" />
-
-<img width="1080" height="852" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
+<img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
 
 ## Quick Start
@@ -191,7 +188,7 @@ Agent Helm is installed alongside the plugin as its local capability and secure 
 
 First run may still require a few local dependencies, Tunnel settings, or ChatGPT connection steps. DSH with ChatGPT checks the current environment and walks you through the required installation, connection, and authorization flow.
 
-<img width="2776" height="1984" alt="20260831230831" src="https://github.com/user-attachments/assets/9d2c246a-a960-4c12-a019-39174db7a52f" />
+<img width="2164" height="1666" alt="dsh-config" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
 **You do not need to leave the product to hunt through installation docs, piece together environment variables, or figure out third-party configuration on your own.**
 
@@ -206,6 +203,7 @@ First run may still require a few local dependencies, Tunnel settings, or ChatGP
 An AI development task is more than a few commands or a single Agent Session.
 
 Through **Agent Helm Work History**, DSH with ChatGPT connects the ChatGPT Conversation, real Workspace, direct execution, and delegated Sessions under the same piece of Work.
+<img width="2164" height="1666" alt="dsh-history" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
 ```text
 ChatGPT Conversation
