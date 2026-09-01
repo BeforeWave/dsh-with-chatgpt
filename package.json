@@ -1,0 +1,132 @@
+{
+  "name": "@beforewave/dsh-with-chatgpt",
+  "version": "0.1.3",
+  "description": "Primary DSH entry for using ChatGPT with local code, Agent Helm engineering capabilities, and native DSH sessions.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeforeWave/dsh-with-chatgpt.git"
+  },
+  "homepage": "https://github.com/BeforeWave/dsh-with-chatgpt#readme",
+  "bugs": {
+    "url": "https://github.com/BeforeWave/dsh-with-chatgpt/issues"
+  },
+  "keywords": [
+    "chatgpt",
+    "mcp",
+    "dsh",
+    "deepseek",
+    "coding-agent"
+  ],
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json",
+    "./client": {
+      "types": "./lib/client.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./runtime": {
+      "types": "./lib/runtime/index.d.ts",
+      "default": "./lib/runtime/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "preflight.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/index.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/runtime/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/runtime/index.js --external:@beforewave/agent-helm && esbuild src/standalone/plugin.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/standalone-host.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/standalone/cli.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/cli.js && node scripts/build-client.mjs && node scripts/build-standalone.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "node --input-type=module -e \"import {rmSync} from 'node:fs'; rmSync('lib',{recursive:true,force:true})\"",
+    "standalone": "node lib/cli.js standalone",
+    "test": "node --test tests/*.test.mjs",
+    "pretest": "npm run build"
+  },
+  "dependencies": {
+    "@beforewave/agent-helm": "0.1.3",
+    "@beforewave/agent-helm-ui-contract": "0.1.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1 <5",
+    "@deepseek-ai/dsh-agent": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-agent-default-model": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-agent-presets": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-llm": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-session": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-session-persistence": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-session-title": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/dsh-workspace": ">=0.1.0-rc.6 <0.2.0",
+    "@deepseek-ai/schemastery": ">=3.18.1 <4",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-mcp-client": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-client-runtime": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-client-ui-sidebar": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-client-locale": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-client-ui-primitives": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-system-prompt": ">=0.1.1-rc.2 <0.2.0",
+    "@deepseek-ai/dsh-tools": ">=0.1.1-rc.2 <0.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1 <5",
+    "@deepseek-ai/dsh-agent": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-agent-default-model": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-agent-presets": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-llm": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-session": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-session-persistence": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-session-title": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-workspace": "^0.1.1-rc.2",
+    "@deepseek-ai/schemastery": ">=3.18.1 <4",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0",
+    "@deepseek-ai/dsh-host-webserver": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-locale": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.1-rc.2",
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-theme": "^0.1.1-rc.2"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "dsh-with-chatgpt": "lib/cli.js"
+  },
+  "agentHelm": {
+    "ownership": "integration"
+  }
+}

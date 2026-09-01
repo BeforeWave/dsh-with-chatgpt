@@ -1,0 +1,20 @@
+# DSH with ChatGPT launcher and native-agent adapter. Agent Helm Core owns
+# configuration parsing, MCP, code intelligence, authentication and tunnel runtimes.
+- insert:
+  - id: dsh-with-chatgpt
+    name: "@beforewave/dsh-with-chatgpt"
+    config:
+      daemonMode: auto
+      daemonSocket: ''
+      adapterId: dsh
+      host: 127.0.0.1
+      port: 3457
+      tokenFile: ''
+      tokenEnv: AGENT_HELM_TOKEN
+      tunnelEnabled: true
+      tunnelIdEnv: CONTROL_PLANE_TUNNEL_ID
+      tunnelApiKeyEnv: CONTROL_PLANE_API_KEY
+      tunnelProxyEnv: HTTPS_PROXY
+      tunnelPollTimeoutMs: 30000
+      tunnelPollDeadlineGuardrailMs: 3000
+      tunnelHealthListenAddr: 127.0.0.1:3458
