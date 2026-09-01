@@ -4,171 +4,160 @@
 
 # DSH with ChatGPT
 
-> **把 ChatGPT 的推理能力带进本地工作区：小任务直接修复，大任务交给 DSH。**
+> **让 ChatGPT 直接进入你的本地开发环境：理解真实项目、直接完成修改，并把需要持续执行的更大任务交给 DSH。**
 
-我们把 ChatGPT 从云端请到了本地，也把它放进了沙盒。
+**DSH with ChatGPT** 让 ChatGPT 不再只停留在聊天窗口里，而是真正参与到你的本地开发工作中。
 
-**DSH with ChatGPT** 将 ChatGPT 深度接入你的真实本地工作区与 DeepSeek Harness（DSH）原生执行 Session。
+你可以像平时一样在 ChatGPT 里描述问题、提出修改要求、讨论方案和 Review 结果。ChatGPT 可以直接基于你授权的本地项目理解问题并完成工作。
 
-ChatGPT 不再局限于被动接收复制粘贴的代码片段，而是可以直接理解工作区中的代码、配置、测试、文档、Git 状态和工程工具，追踪符号与引用、分析诊断信息，并基于真实项目上下文进行推理和工作。
+当任务更大、需要持续执行时，你可以指定它可以把任务继续交给 **DeepSeek Harness（DSH）**。你可以随时查看进度、追加指令，或者直接接管。ChatGPT也 还可以接手继续工作。
 
-对于明确而集中的修改，ChatGPT 可以直接完成；对于范围更大、需要反复编辑、构建和测试的任务，ChatGPT 先理解问题和工程，再把具体执行交给 DSH。任务完成后，ChatGPT 重新读取真实代码和 Git Diff，独立 Review 结果。
-<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
+这些本地操作在明确的权限范围和 **Sandbox** 中执行，让 ChatGPT 和 DSH 能真正动手，同时不会获得对整台电脑的无限制访问。
+
+如果你不想依赖 DSH Plugin 来查看和管理这些工作，也可以使用 [**Agent Helm Chrome Extension**](https://github.com/BeforeWave/agent-helm-extensions)。
+
+它提供独立的浏览器入口，让你直接在 ChatGPT 旁查看和管理本地工作，并在不同 Work 和 Agent Session 之间切换。
+
+<img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+
 ```text
                          ChatGPT
                    理解 · 推理 · Review
                             │
-                            ▼
-                        Agent Helm
-                       /          \
-                      /            \
-                 直接处理           委派
-                   │                │
-                   ▼                ▼
-                本地工作区           DSH
-                   ▲          Edit · Run · Test
-                   │          随时人工接管
-                   └────────────────┘
+                   ┌────────┴────────┐
+                   │                 │
+                   ▼                 ▼
+              直接完成工作         交给 DSH
+                   │                 │
+                   ▼                 ▼
+               本地项目          DSH Session
+                   ▲                 │
+                   │          持续执行 · 随时接管
+                   └─────────────────┘
 ```
 
 ## 核心体验
 
-### 真实工作区感知
+### 让 ChatGPT 操作真实的本地项目
 
-ChatGPT 直接面对真实工作区，而不是聊天窗口里的代码片段。
+一个任务可以从 ChatGPT Conversation 开始，但真正的项目始终在你的电脑上。
 
-它可以理解：
+你不需要不断把代码、日志、错误信息和项目背景复制进聊天窗口。ChatGPT 可以直接基于你授权的本地项目理解问题、完成修改，并继续检查实际结果。
 
-- 源代码
-- 配置与脚本
-- 测试
-- 文档
-- Git / Worktree 状态
-- 工程诊断
-- 本地工具链
-- 项目运行上下文
+对于用户来说，体验很简单：
 
-这意味着你不再需要不断复制代码、日志和项目背景到 ChatGPT。
+* 在 ChatGPT 里描述你想做什么
+* 让 ChatGPT 理解当前项目
+* 让它直接完成明确的修改
+* 回到同一个 Conversation 继续讨论和 Review
 
-### 小任务直接处理
+### 小任务直接做，大任务交给 DSH
 
-Bug 排查、局部修改、小范围重构、代码理解、验证和 Review，不需要为了每一个任务都启动完整 Coding Agent。
+并不是每一个任务都需要启动一个完整的 Coding Agent。
 
-**ChatGPT 可以通过 Agent Helm 直接完成这些工作。**
+对于明确而集中的工作，ChatGPT 可以直接完成。
 
-```text
-ChatGPT ──► Agent Helm ──► 读取 · 推理 · 修改 · 验证
-```
-
-### 大任务交给 DSH
-
-当任务需要大量文件修改、持续构建测试或者多轮执行时，ChatGPT 可以先完成理解和规划，再把具体执行交给原生 DSH Session。
+当任务需要持续执行、涉及更多修改，或者需要经过多轮工作以后，ChatGPT 可以在理解问题和目标之后，把后续执行交给 DSH。
 
 ```text
 ChatGPT
    │
-   ├── 理解真实工作区
-   ├── 分析问题
-   └── 明确执行方向
+   ├── 理解项目
+   ├── 明确目标
+   └── 决定下一步
               │
               ▼
           DSH Session
               │
-        Edit · Run · Test
+        持续完成任务
               │
               ▼
         ChatGPT Review
 ```
 
+这样，你不需要在一开始就决定“这个任务到底应该自己和 ChatGPT 做，还是启动 Agent”。
+
+可以先从 ChatGPT 开始，需要的时候再继续交给 DSH。
+
 ### 随时人工接管
 
 DSH 不是隐藏在后台的黑盒执行器。
 
-每一次委派都会创建一个真正的原生 DSH Session。你可以随时打开 DSH Web：
+当 ChatGPT 把任务交给 DSH 时，会创建一个真实的 DSH Session。
 
-- 查看实时执行进度
-- 追加指令
-- 调整 Agent 方向
-- 手工修改代码
-- 完全接管当前 Session
+你可以随时打开 DSH Web：
 
-> **AI 可以持续执行，但最终控制权始终属于你。**
+* 查看当前执行进度
+* 追加新的要求
+* 调整 Agent 的方向
+* 直接参与当前工作
+* 完全接管 Session
+
+> **Agent 可以持续执行，但最终控制权始终属于你。**
 
 ### ChatGPT 独立 Review
 
-执行和判断是两件不同的事情。
+执行完成不代表工作就结束了。
 
-DSH 完成工作以后，ChatGPT 会重新读取真实代码和 Git Diff，而不是单纯相信 Agent 的完成报告。
+DSH 完成任务以后，ChatGPT 可以重新回到真实项目中检查实际结果，而不是只读取 Agent 的完成说明。
 
-它可以继续检查：
+它可以继续判断：
 
-- 实现是否正确
-- 是否遗漏边界情况
-- 是否引入潜在回归
-- 测试是否充分
-- 实际修改是否符合原始目标
+* 最终结果是否符合原来的要求
+* 有没有遗漏重要情况
+* 修改是否带来了新的问题
+* 是否还需要继续调整
 
-这样形成的是完整闭环：
+形成完整的工作闭环：
 
 ```text
-理解 → 直接处理 / 委派执行 → 验证 → 独立 Review
+理解 → 直接处理 / 交给 DSH → 完成执行 → ChatGPT Review
 ```
 
-## 安全地让 ChatGPT 真正动手
+## 安全地让 ChatGPT 和 DSH 真正动手
 
-把 ChatGPT 接进本地工作区，不应该等于把整台电脑交给它。
+让 AI 操作本地项目，不应该等于把整台电脑交给它。
 
-DSH with ChatGPT 的所有本地工程能力都通过 **Agent Helm** 提供。
+DSH with ChatGPT 只在你授权的本地工作环境中工作。ChatGPT 和 DSH 能够访问什么、能够在哪里工作，以及本地操作可以做到什么，都受到明确的权限范围限制。
 
-目前，Agent Helm 使用 **Serena** 提供基于 LSP 的语义代码理解，使用 **Anthropic Sandbox Runtime** 作为本地执行的 sandbox enforcement backend，并默认使用 **OpenAI tunnel-client** 建立与 ChatGPT 的 Secure MCP Tunnel。具体能力边界与安全模型由 Agent Helm 定义。
-
-Agent Helm 为每一次工作建立明确的 Execution Context，并控制真实的资源权限，包括：
-
-- Workspace / Worktree
-- 文件系统读写
-- 命令执行
-- 环境变量
-- 网络访问
-- Local TCP Binding
-- Semantic 能力
-- Coding Agent 委派
+本地执行进一步受到 **Sandbox** 约束。
 
 ```text
 ChatGPT
    │
    ▼
+DSH with ChatGPT
+   │
+   ▼
 Agent Helm
    │
-   ├── Execution Context
-   ├── Capability Policy
-   ├── Filesystem Authority
-   ├── Environment Authority
-   ├── Network Authority
+   ├── Authorized Workspace
+   ├── Permission Boundary
    └── Sandbox
             │
             ▼
-       授权的本地工作区
+        本地项目
 ```
 
-在支持的环境中，本地命令进一步运行在 enforcing sandbox 中。
+这不是简单依赖 Prompt 告诉 AI“不要访问其他地方”。
 
-这不是依赖 Prompt 告诉模型“不要访问其他地方”，而是由实际执行层限制资源边界。
+真正的限制发生在本地执行层。
 
-对于无法在执行前静态判断的动态行为，Agent Helm 会让 enforcing sandbox 承担最终的资源约束。
+> **ChatGPT 和 DSH 可以真正进入项目工作，但它们能够访问什么、执行什么，仍然由明确的本地权限和 Sandbox 边界决定。**
 
-如果无法安全执行，同时又没有可用的 enforcing sandbox，则默认 **fail closed**，而不是静默退化为无限制执行。
+这些本地能力和安全边界由 **Agent Helm** 提供：
 
-> **ChatGPT 可以真正动手，但它能访问什么、执行什么，仍然由明确的本地权限边界决定。**
+https://github.com/BeforeWave/agent-helm
 
-完整的安全模型以及可复现的 Security / Conformance Tests 由 [Agent Helm](https://github.com/BeforeWave/agent-helm) 项目统一维护。
+你不需要为了使用 DSH with ChatGPT，先单独理解或配置 Agent Helm；安装和 Setup 流程会一起处理所需环境。
 
 ## DSH Plugin UI
 
 DSH with ChatGPT 直接集成在 DSH Web 中。
 
-<img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+你可以在原本的 DSH 界面里看到 ChatGPT 相关的工作、Session 和运行状态，并在需要时直接进入对应的 DSH Session。
 
-
+<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
 ## 快速开始
 
@@ -184,66 +173,62 @@ dsh plugin --profile web add dsh-with-chatgpt
 dsh web
 ```
 
-Agent Helm 会作为底层本地能力与安全执行层一起安装。
+首次运行时，DSH with ChatGPT 会检查当前环境，并通过产品界面引导你完成需要的安装、连接和授权。
 
-首次运行时可能仍需要完成一些本地依赖、Tunnel 或 ChatGPT 连接配置。DSH with ChatGPT 会检查当前环境，并通过产品界面一步步引导你完成需要的安装、连接和授权步骤。
 <img width="2164" height="1666" alt="dsh-config" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
-**你不需要离开产品自己查安装文档、拼环境变量，或者研究第三方组件应该怎么配置。**
+**你不需要离开产品自己查安装文档、拼环境变量，或者研究各个组件应该怎么配置。**
+
+需要的本地能力和安全执行环境会随 Setup 流程一起准备。
 
 > **注意**
 >
-> Serena、Tunnel、浏览器连接等第三方组件的具体配置不再维护在 README 中。
+> 本地依赖、Tunnel 和 ChatGPT 连接方式可能随着版本和环境变化。
 >
-> 这些配置会随着环境和版本变化，产品内的 **Setup Guide** 是权威入口。
+> 产品内的 **Setup Guide** 是当前配置流程的权威入口。
 
 ## Work History
 
-一次 AI 开发工作不只是几条命令，也不只是一个 Agent Session。
+一次真实的开发工作，往往不只发生在一个 ChatGPT Conversation 或一个 DSH Session 中。
 
-DSH with ChatGPT 通过 **Agent Helm Work History**，把 ChatGPT Conversation、真实 Workspace、直接执行和委派 Session 组织到同一项 Work 下面。
+ChatGPT 可能直接完成一部分，也可能把后续工作交给 DSH；你也可能在过程中离开 Conversation、切换 Workspace，之后再回来继续。
 
-```text
-ChatGPT Conversation
-        │
-        ▼
-       Work
-     /      \
-    /        \
-Direct Work  DSH / Subagent Session
-```
+Work History 把这些工作重新组织到一起。
 
-你可以重新找到：
+你可以随时重新找到：
 
-- 这项工作来自哪个 ChatGPT Conversation
-- 使用的是哪个 Workspace / Worktree
-- ChatGPT 做过哪些直接工作
-- 是否委派给 DSH
-- 对应的原生 DSH Session
-- 最近的活动和执行状态
+* 这项工作来自哪个 ChatGPT Conversation
+* 使用的是哪个 Workspace / Worktree
+* ChatGPT 已经完成了什么
+* 是否把任务交给了 DSH
+* 对应的是哪个 DSH Session
+* 最近又发生了什么
 
 <img width="2164" height="1666" alt="dsh-history" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
-这样一项工作可以被重新理解、继续、Review，也可以被人工接管，而不是散落在不同工具的日志里。
+Work History 不是另一份聊天记录，也不只是 Agent Session 列表。
 
-## Agent Helm 产品家族
+它连接的是：
 
-DSH with ChatGPT 是 Agent Helm 产品家族的一部分。
+**Conversation → Workspace → Direct Work → DSH Session → 实际工作历史**
 
-| 项目 | 角色与定位 |
-| --- | --- |
-| [Agent Helm](https://github.com/BeforeWave/agent-helm) | ChatGPT 的本地工程能力、安全边界与执行控制层 |
-| **DSH with ChatGPT** | ChatGPT + DSH 的完整开发工作流 |
-| [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) | 浏览器及其他用户入口扩展 |
+这样，一项工作可以被重新找到、继续、Review，也可以在需要时重新进入 DSH Session 人工接管。
 
-如果你只需要让 ChatGPT 直接、安全地操作本地工作区，而不需要 DSH，可以单独使用 **Agent Helm**。
+## 相关项目
 
-如果你主要从 ChatGPT 浏览器界面工作，可以配合 **Agent Helm Extensions** 使用。
+这几个项目都可以独立使用，不要求你提前了解整个产品体系。
+
+| 项目                        | 说明                            | 链接                                                  |
+| ------------------------- | ----------------------------- | --------------------------------------------------- |
+| **Agent Helm**            | 让 ChatGPT 获得受控的本地工作能力。        | https://github.com/BeforeWave/agent-helm            |
+| **Agent Helm Extensions** | 让浏览器里的 ChatGPT 直接进入本地开发环境并工作。 | https://github.com/BeforeWave/agent-helm-extensions |
 
 ## 项目状态
 
 DSH with ChatGPT 正在持续开发中。
 
-我们的目标不是让一个 Coding Agent 无限制地接管你的电脑，而是建立一套更自然的协作方式：
+这个产品解决的核心问题很简单：
 
-> **ChatGPT 负责理解、推理和 Review；合适的事情直接做，更大的执行任务交给 DSH；AI 可以真正进入本地工作区，而权限边界和最终控制权始终掌握在用户手里。**
+> **从 ChatGPT 开始，让它直接理解和处理真实项目；需要更持续的执行时，把任务交给 DSH；完成以后再由 ChatGPT 回到真实结果上继续 Review。**
+
+整个过程中，AI 可以真正动手，同时本地权限、Sandbox 边界和最终控制权始终掌握在用户手里。
