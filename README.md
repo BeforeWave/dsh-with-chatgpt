@@ -14,9 +14,9 @@
 
 这些本地操作在明确的权限范围和 **Sandbox** 中执行，让 ChatGPT 和 DSH 能真正动手，同时不会获得对整台电脑的无限制访问。
 
-如果你不想依赖 DSH Plugin 来查看和管理这些工作，也可以使用 [**Agent Helm Chrome Extension**](https://github.com/BeforeWave/agent-helm-extensions)。
+> 如果你不想依赖 DSH Plugin 来查看和管理这些工作，也可以使用 [**Agent Helm Chrome Extension**](https://github.com/BeforeWave/agent-helm-extensions)。
 
-它提供独立的浏览器入口，让你直接在 ChatGPT 旁查看和管理本地工作，并在不同 Work 和 Agent Session 之间切换。
+> 它提供独立的浏览器入口，让你直接在 ChatGPT 旁查看和管理本地工作，并在不同 Work 和 Agent Session 之间切换。
 
 <img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
