@@ -167,12 +167,9 @@ Agent Helm
 DSH with ChatGPT 直接集成在 DSH Web 中。
 
 
-<img width="2140" height="1432" alt="20260831230950" src="https://github.com/user-attachments/assets/be286d62-3a67-4e5f-b3be-935495c89ac4" />
+<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
-<img width="2878" height="1920" alt="20260831230933" src="https://github.com/user-attachments/assets/3ae6da99-3c69-4c4f-b91e-94ddd6a1e7a3" />
-
-<img width="1080" height="852" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/dc6b91fa-c4c0-49ec-aabe-8ce3ea92b0db" />
-
+<img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
 
 
@@ -193,7 +190,8 @@ dsh web
 Agent Helm 会作为底层本地能力与安全执行层一起安装。
 
 首次运行时可能仍需要完成一些本地依赖、Tunnel 或 ChatGPT 连接配置。DSH with ChatGPT 会检查当前环境，并通过产品界面一步步引导你完成需要的安装、连接和授权步骤。
-<img width="2776" height="1984" alt="20260831230831" src="https://github.com/user-attachments/assets/9d2c246a-a960-4c12-a019-39174db7a52f" />
+<img width="2164" height="1666" alt="dsh-config" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+
 **你不需要离开产品自己查安装文档、拼环境变量，或者研究第三方组件应该怎么配置。**
 
 > **注意**
@@ -226,6 +224,8 @@ Direct Work  DSH / Subagent Session
 - 是否委派给 DSH
 - 对应的原生 DSH Session
 - 最近的活动和执行状态
+
+<img width="2164" height="1666" alt="dsh-history" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
 这样一项工作可以被重新理解、继续、Review，也可以被人工接管，而不是散落在不同工具的日志里。
 
