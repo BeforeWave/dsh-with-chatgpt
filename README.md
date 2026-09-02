@@ -4,44 +4,38 @@
 
 # DSH with ChatGPT
 
-> **从 ChatGPT 开始工作。明确的任务直接完成，需要持续执行时交给 DSH，完成后再回到 ChatGPT 检查结果并继续。**
+> **让浏览器里的 ChatGPT 直接理解和操作你的本地开发环境，并在需要时指挥 DSH 持续执行任务。**
 
-**DSH with ChatGPT** 把 ChatGPT、你的本地项目和 **DeepSeek Harness（DSH）** 连接成一套连续的工作流。
+**DSH with ChatGPT 是一个 DeepSeek Harness（DSH）Plugin。**
 
-你仍然在 ChatGPT 里描述问题、讨论方案和检查结果。ChatGPT 可以直接了解当前项目并完成工作；当任务更大、耗时更长或者需要持续执行时，可以把后续工作交给 DSH。
+它让 ChatGPT 直接基于你电脑上的真实项目工作：理解代码、分析问题、修改文件、运行命令并验证结果，而不需要反复把代码、错误信息和项目上下文复制到对话里。
 
-DSH 执行过程中，你可以随时查看进度、追加要求或者直接接管。完成以后，ChatGPT 可以重新检查项目中的实际结果并继续处理。
+对于需要大量修改、构建、测试或持续执行的任务，ChatGPT 可以先理解问题和修改方向，再指挥原生 DSH Session 执行。
+
+同时，你可以直接在 DSH 中查看和管理 ChatGPT 的本地工作：它使用了哪个项目、做过什么、当前进展如何，以及关联的 DSH Session。
 
 ```text
-                         ChatGPT
-                   理解 · 推理 · 工作 · Review
-                            │
-                   ┌────────┴────────┐
-                   │                 │
-                   ▼                 ▼
-               直接完成工作         交给 DSH
-                   │                 │
-                   │                 ▼
-                   │             DSH Session
-                   │                 │
-                   │        持续执行 · 随时接管
-                   │                 │
-                   └────────┬────────┘
-                            ▼
-                      ChatGPT Review
+                 浏览器里的 ChatGPT
+                        │
+                 理解并操作本地项目
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+           直接完成            指挥 DSH
+              │                   │
+              │                   ▼
+              │              DSH Session
+              │                   │
+              └─────────┬─────────┘
+                        ▼
+                   检查实际结果
 ```
 
-**项目和实际执行环境在你的电脑上。**
-
-ChatGPT 工作时，会收到完成当前任务所需的信息，例如相关文件内容、错误信息、项目状态和命令输出。
-
-本地操作基于你授权的项目和权限执行，并受到 Sandbox 保护。需要的安全保护不可用时，相关操作会被拒绝。
-
-<img width="2164" height="1666" alt="dsh-pure" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+<img width="2164" height="1666" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
 ## 快速开始
 
-安装 DSH Plugin：
+安装 Plugin：
 
 ```bash
 dsh plugin --profile web add dsh-with-chatgpt
@@ -53,109 +47,50 @@ dsh plugin --profile web add dsh-with-chatgpt
 dsh web
 ```
 
-首次运行时，DSH with ChatGPT 会检查当前环境，并在产品界面中引导你完成需要的安装、连接和授权。
+首次运行时，DSH with ChatGPT 会检查当前环境，并通过产品内的 **Setup Guide** 引导你完成需要的安装、连接和授权。
 
-<img width="2164" height="1666" alt="dsh-config" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+<img width="2164" height="1666" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
-当前配置流程以产品内的 **Setup Guide** 为准。
+配置完成后，就可以直接在浏览器里的 ChatGPT 中开始工作。
 
-如果你更习惯直接从浏览器里的 ChatGPT 查看和管理工作，也可以使用 [**Agent Helm Chrome Extension**](https://github.com/BeforeWave/agent-helm-extensions)。
+如果你更习惯直接从浏览器管理 Agent Helm，也可以使用 [Agent Helm Chrome Extension](https://github.com/BeforeWave/agent-helm-extensions)。
 
-## ChatGPT 直接工作
+## 在 DSH 中查看和管理工作
 
-对于明确的任务，ChatGPT 可以直接：
+DSH with ChatGPT 会把 ChatGPT Conversation、本地项目、ChatGPT 的本地操作和 DSH Session 组织到同一项工作中。
 
-- 理解当前项目
-- 查找和读取文件
-- 修改内容
-- 运行工具和命令
-- 检查错误和运行结果
-- 验证任务结果
+你可以直接看到：
 
-不需要一开始就决定是否启动 DSH Session。
+* ChatGPT 当前使用的项目 / Worktree
+* 对应的 ChatGPT Conversation
+* ChatGPT 在本地做过什么
+* 当前工作状态和最近的执行活动
+* 关联的 DSH Session
 
-## 交给 DSH 持续执行
+<img width="2164" height="1666" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
-较大、耗时或者需要多轮处理的任务，可以在 ChatGPT 明确目标后交给 DSH。
+如果任务正在 DSH 中执行，可以直接进入对应的 Session 查看进度、继续对话或接管执行。
 
-```text
-ChatGPT
-   │
-   ├── 理解项目
-   ├── 明确目标
-   └── 交给 DSH
-              │
-              ▼
-          DSH Session
-              │
-          持续执行
-              │
-              ▼
-        ChatGPT Review
-```
+<img width="906" height="1078" alt="DSH Session" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
-任务可以自然地在：
+过去的工作也会保留在 Work History 中，方便之后重新找到并继续。
 
-**ChatGPT 直接处理 → DSH 持续执行 → ChatGPT 检查并继续**
+## 本地项目与安全
 
-之间切换。
+项目和实际执行环境仍然在你的电脑上。
 
-## 随时查看和接管
+ChatGPT 会根据当前任务获得必要的本地信息，包括相关文件、代码结构、诊断、Git 状态、命令输出和测试结果。
 
-每次交给 DSH 的工作都会对应一个 DSH Session。
+实际能够访问和执行什么，由当前授权的 Workspace、能力和权限决定。
 
-你可以随时在 DSH Web 中：
-
-- 查看当前进度
-- 追加新的要求
-- 调整执行方向
-- 直接参与当前工作
-- 接管 Session
-
-<img width="906" height="1078" alt="dsh-plugin-only" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
-
-## 本地项目与 ChatGPT 之间会传递什么
-
-项目文件、Git 状态、工具和命令都以你的本地环境为准。
-
-ChatGPT 工作时，会收到完成当前任务所需要的信息，包括：
-
-- 相关文件内容
-- 错误和诊断信息
-- 项目状态
-- Git 信息
-- 命令输出
-- 完成当前任务需要的其他内容
-
-## 安全边界
-
-ChatGPT 直接执行的本地操作由 [**Agent Helm**](https://github.com/BeforeWave/agent-helm) 的权限和 Sandbox 边界控制。
-
-交给 DSH 后，DSH Session 按 DSH 自身配置的权限和 Sandbox 模型执行。
-
-## Work History
-
-Work History 会把一次工作中的 ChatGPT Conversation、本地项目、直接操作和 DSH Session 关联起来。
-
-你可以查看：
-
-- 这项工作来自哪个 ChatGPT Conversation
-- 使用的是哪个项目 / Worktree
-- ChatGPT 已经完成了什么
-- 是否把任务交给了 DSH
-- 对应的 DSH Session
-- 最近发生了什么
-
-<img width="2164" height="1666" alt="dsh-history" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
-
-这样，一项持续较久的工作可以随时重新找到、继续处理，也可以重新进入对应的 DSH Session。
+ChatGPT 直接执行本地操作时，由 [Agent Helm](https://github.com/BeforeWave/agent-helm) 提供本地能力和 Sandbox 边界；任务由 DSH 执行时，则使用对应 DSH Session 自身的权限和 Sandbox 配置。
 
 ## 相关项目
 
-| 项目 | 用途 | 链接 |
-| --- | --- | --- |
-| **Agent Helm** | 让 ChatGPT 连接本地项目并完成工作 | [Agent Helm](https://github.com/BeforeWave/agent-helm) |
-| **Agent Helm Extensions** | Chrome Extension 和其他 Agent Helm 使用界面 | [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) |
+| 项目                                                                           | 用途                                   |
+| ---------------------------------------------------------------------------- | ------------------------------------ |
+| [Agent Helm](https://github.com/BeforeWave/agent-helm)                       | 让 ChatGPT 连接并操作本地开发环境                |
+| [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) | Chrome Extension 和其他 Agent Helm 用户界面 |
 
 ## 项目状态
 
