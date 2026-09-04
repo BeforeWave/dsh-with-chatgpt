@@ -29,7 +29,15 @@ function sessionRouteParts(req: IncomingMessage): string[] {
 
 export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method === 'GET') {
-    json(res, 200, await runtime.getStatus())
+    try {
+      json(res, 200, await runtime.getStatus())
+    } catch (error) {
+      json(res, 503, {
+        error: error instanceof Error ? error.message : String(error),
+        code: 'status_unavailable',
+        retryable: true,
+      })
+    }
     return
   }
   if (req.method === 'POST') {
@@ -47,10 +55,12 @@ export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: 
         if (typeof values.tunnelId !== 'string' || !values.tunnelId.trim()) throw new Error('Tunnel ID is required')
         if (values.organizationId !== undefined && typeof values.organizationId !== 'string') throw new Error('Organization ID must be a string')
         if (values.apiKey !== undefined && typeof values.apiKey !== 'string') throw new Error('Runtime API Key must be a string')
+        if (values.proxyUrl !== undefined && typeof values.proxyUrl !== 'string') throw new Error('Tunnel proxy URL must be a string')
         json(res, 200, await runtime.configureTunnel({
           tunnelId: values.tunnelId,
           ...(typeof values.organizationId === 'string' ? { organizationId: values.organizationId } : {}),
           ...(typeof values.apiKey === 'string' ? { apiKey: values.apiKey } : {}),
+          ...(typeof values.proxyUrl === 'string' ? { proxyUrl: values.proxyUrl } : {}),
         }))
         return
       }

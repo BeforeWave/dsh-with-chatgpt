@@ -1,8 +1,8 @@
 import { homedir } from 'node:os'
-import { join } from 'node:path'
 import {
   AdapterRpcClient,
-  coreDaemonLaunchEnvironment,
+  defaultDaemonEndpoint,
+  coreRuntimeEnvironment,
   loadCoreConfig,
   probeDaemon,
   type ChatSessionActivity,
@@ -25,7 +25,7 @@ import {
   type HelmUiStatus,
 } from './status.js'
 
-function defaultCoreDaemonSocket(): string { return join(homedir(), '.agent-helm', 'run', 'daemon.sock') }
+function defaultCoreDaemonSocket(): string { return process.env.AGENT_HELM_DAEMON_SOCKET?.trim() || defaultDaemonEndpoint(homedir()) }
 
 export interface ChatGPTHelmRuntimeOptions {
   daemonMode: DaemonMode
@@ -47,6 +47,7 @@ export class ChatGPTHelmRuntime {
   #started = false
   #coreSocket: string | undefined
   #tunnelClientReady = false
+  #startupError: string | undefined
   constructor(readonly options: ChatGPTHelmRuntimeOptions) {}
 
   get running(): boolean { return this.#started }
@@ -139,12 +140,12 @@ export class ChatGPTHelmRuntime {
 
   async start(): Promise<void> {
     if (this.#started) return
-    const socket = this.#ensureCoreSocket()
-    const plan = resolveDaemonLaunchPlan(this.options.daemonMode, await probeDaemon(socket))
     try {
+      const socket = this.#ensureCoreSocket()
+      const plan = resolveDaemonLaunchPlan(this.options.daemonMode, await probeDaemon(socket))
       if (plan === 'spawn') {
         const loaded = await this.#loadManagedConfig()
-        await this.#spawnManaged(coreDaemonLaunchEnvironment(loaded))
+        await this.#spawnManaged(coreRuntimeEnvironment(loaded))
       } else {
         this.options.logger?.info(`dsh-with-chatgpt: attached to external Core daemon at ${socket}`)
       }
@@ -153,8 +154,10 @@ export class ChatGPTHelmRuntime {
         await this.rpc.setCoreEnabled(true)
         await this.#localMcp?.syncFromCore().catch(() => {})
       }
+      this.#startupError = undefined
       this.#started = true
     } catch (error) {
+      this.#startupError = error instanceof Error ? error.message : String(error)
       await this.#detachRpc()
       await this.options.host.dispose?.().catch(() => {})
       await this.#managed?.stop().catch(() => {})
@@ -191,7 +194,12 @@ export class ChatGPTHelmRuntime {
       const configurable = this.options.daemonMode !== 'external'
       return {
         ...status,
-        core: { state: 'stopped', enabled: false, configurable },
+        core: {
+          state: this.#startupError ? 'unavailable' : 'stopped',
+          enabled: false,
+          configurable,
+          ...(this.#startupError ? { message: this.#startupError } : {}),
+        },
         running: false,
         lifecycleManaged: false,
         ...(this.#coreSocket ? { coreSocket: this.#coreSocket } : {}),
@@ -241,20 +249,26 @@ export class ChatGPTHelmRuntime {
     }
 
     if (this.#rpc?.connected) return await this.getStatus()
-    const socket = this.#ensureCoreSocket()
-    const plan = resolveDaemonLaunchPlan(this.options.daemonMode, await probeDaemon(socket))
-    if (plan === 'spawn') {
-      const loaded = await this.#loadManagedConfig()
-      await this.#spawnManaged(coreDaemonLaunchEnvironment(loaded))
-    } else {
-      this.options.logger?.info(`dsh-with-chatgpt: attached to external Core daemon at ${socket}`)
+    try {
+      const socket = this.#ensureCoreSocket()
+      const plan = resolveDaemonLaunchPlan(this.options.daemonMode, await probeDaemon(socket))
+      if (plan === 'spawn') {
+        const loaded = await this.#loadManagedConfig()
+        await this.#spawnManaged(coreRuntimeEnvironment(loaded))
+      } else {
+        this.options.logger?.info(`dsh-with-chatgpt: attached to external Core daemon at ${socket}`)
+      }
+      await this.#attachRpc()
+      if (plan === 'spawn') {
+        await this.rpc.setCoreEnabled(true)
+        await this.#localMcp?.syncFromCore().catch(() => {})
+      }
+      this.#startupError = undefined
+      return await this.getStatus()
+    } catch (error) {
+      this.#startupError = error instanceof Error ? error.message : String(error)
+      throw error
     }
-    await this.#attachRpc()
-    if (plan === 'spawn') {
-      await this.rpc.setCoreEnabled(true)
-      await this.#localMcp?.syncFromCore().catch(() => {})
-    }
-    return await this.getStatus()
   }
 
   async setLocalMcpEnabled(enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {

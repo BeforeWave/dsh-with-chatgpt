@@ -14,7 +14,7 @@ export interface HelmCapabilityDefinition {
 export const helmCapabilityDefinitions: readonly HelmCapabilityDefinition[] = [
   { id: 'understand', icon: '💡', labelKey: 'understand', toggleKey: 'toggleCodeRead' },
   { id: 'coding', icon: '✋', labelKey: 'coding', toggleKey: 'toggleCodeWrite' },
-  { id: 'command', icon: '🗣️', labelKey: 'command', toggleKey: 'toggleAgentDelegation' },
+  { id: 'command', icon: '👉', labelKey: 'command', toggleKey: 'toggleAgentDelegation' },
 ] as const
 
 export interface HelmCapabilitySummaryItem {

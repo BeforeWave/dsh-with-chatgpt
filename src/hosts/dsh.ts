@@ -102,7 +102,10 @@ export function createDshRuntime(ctx: Context, config: Config): ChatGPTHelmRunti
       createLocalMcp: (rpc) => new LocalMcpBridge(ctx, rpc),
       dispose: async () => await adapter.disposeOwned(),
     },
-    logger: { info: (message) => ctx.logger.info(message) },
+    logger: {
+      info: (message) => ctx.logger.info(message),
+      warn: (message) => ctx.logger.warn(message),
+    },
   })
 }
 
@@ -128,8 +131,15 @@ export async function registerDshPlugin(ctx: Context, config: Config): Promise<v
     const runtime = createDshRuntime(ctx, config)
     let disposeRoutes: (() => void) | undefined
     try {
-      await runtime.start()
+      // Keep the control/status surface alive even when Core is unavailable so the
+      // browser UI can open and present a recoverable unavailable state.
       disposeRoutes = registerDshRuntimeRoutes(ctx, runtime)
+      try {
+        await runtime.start()
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn(`dsh-with-chatgpt: Agent Helm Core is unavailable during startup: ${detail}`)
+      }
     } catch (error) {
       disposeRoutes?.()
       await runtime.stop()

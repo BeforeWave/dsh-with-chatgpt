@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HelmUiDependencyName, HelmUiRuntimeState, HelmUiStatus } from '../runtime/status.js'
-import type { HelmUiAdapter, HelmExternalCapability } from './adapter.js'
+import { isHelmUiRequestError, type HelmUiAdapter, type HelmExternalCapability } from './adapter.js'
 import { SessionActivityPanel } from './components/session-activity.js'
 
 const CSS_ID = '@beforewave/dsh-with-chatgpt/client'
@@ -37,7 +37,7 @@ const css = `
 .dshHelmRow{box-sizing:border-box;min-height:50px;width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 11px;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .dshHelmRow:last-child{border-bottom:0}
 .dshHelmNameArea{min-width:0;flex:1;display:flex;align-items:center;gap:6px;overflow:hidden}
-.dshHelmCapsInline{position:relative;min-width:0;flex:1;display:inline-flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px;white-space:nowrap;overflow:hidden}
+.dshHelmCapsInline{position:relative;min-width:0;flex:1;display:inline-flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:20px;font-weight:500;white-space:nowrap;overflow:hidden}
 .dshHelmCapsItem{display:inline-flex;align-items:center;gap:3px;flex:none}
 .dshHelmCapsItemLabel{display:inline}
 .dshHelmCapsInline[data-compact=true]>.dshHelmCapsItem .dshHelmCapsItemLabel{display:none}
@@ -64,11 +64,10 @@ const css = `
 .dshHelmTunnelDialogContent{width:min(760px,100%);margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .dshHelmTunnelDialogStep{display:flex;flex-direction:column;gap:9px;padding:18px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-specific-menu)}
 .dshHelmTunnelInstall{margin-top:4px;padding:12px;border-radius:9px;background:var(--dsw-alias-interactive-bg-hover);display:flex;flex-direction:column;gap:6px}
-.dshHelmRequestError{min-height:42px;display:flex;align-items:center;justify-content:space-between;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}
 .dshHelmDetails{box-sizing:border-box;padding:10px 11px 11px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .dshHelmGroupBody{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .dshHelmGroupBody>.dshHelmRow{padding-left:26px}
-.dshHelmSubRow{box-sizing:border-box;min-height:42px;width:100%;display:flex;align-items:center;gap:8px;padding:6px 11px 6px 26px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.dshHelmSubRow{box-sizing:border-box;min-height:42px;width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 26px;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .dshHelmSubRow:last-child{border-bottom:0}
 .dshHelmSubName{min-width:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
 .dshHelmSubIcon{display:inline-flex;width:20px;justify-content:flex-start;align-items:center;margin-right:2px}
@@ -85,7 +84,7 @@ const css = `
 .dshHelmActions{display:flex;gap:8px;flex-wrap:wrap;padding-top:9px}
 .dshHelmSwitch{box-sizing:border-box;width:40px;height:24px;flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:3px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
 .dshHelmSwitch:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-.dshHelmSwitch:disabled{color:var(--dsw-alias-label-dimmed);cursor:not-allowed}
+.dshHelmSwitch:disabled{color:var(--dsw-alias-label-dimmed);cursor:not-allowed;opacity:.45}
 .dshHelmSwitchTrack{position:relative;display:inline-block;width:40px;height:24px;border-radius:12px;background:var(--dsw-alias-border-l2);transition:background-color .12s var(--ds-ease-in-out)}
 .dshHelmSwitchTrack[data-on=true]{background:var(--dsw-alias-state-business-primary)}
 .dshHelmSwitchThumb{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--dsw-static-neutral-bluish-00);transition:transform .12s var(--ds-ease-in-out)}
@@ -95,7 +94,11 @@ const css = `
 .dshHelmConfirm{position:absolute;right:0;bottom:calc(100% + 6px);z-index:2;width:230px;padding:9px 10px;border:1px solid var(--dsw-alias-state-error-primary);border-radius:9px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv2)}
 .dshHelmConfirmText{margin:0 0 8px;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:16px}
 .dshHelmConfirmActions{display:flex;gap:8px;justify-content:flex-end}
-.dshHelmInstallCommand{display:block;margin:8px 0 0;padding:7px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}
+.dshHelmInstallCommand{box-sizing:border-box;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;margin:8px 0 0;padding:7px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);text-align:left;cursor:pointer}
+.dshHelmInstallCommand:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dshHelmInstallCommand:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+.dshHelmInstallCommandText{min-width:0;font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}
+.dshHelmInstallCommandAction{color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;font-weight:600;white-space:nowrap}
 .dshHelmField{display:flex;flex-direction:column;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px}
 .dshHelmInput{box-sizing:border-box;width:100%;height:32px;padding:5px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);font:12px/18px ui-monospace,SFMono-Regular,Menlo,monospace}
 .dshHelmInput:focus{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:0}
@@ -111,6 +114,23 @@ export function installHelmStyles(): () => void {
   tag.textContent = css
   document.head.appendChild(tag)
   return () => tag.remove()
+}
+
+function CopyableCommand({ command, t }: { command: string; t: HelmTranslate }): React.JSX.Element {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    void navigator.clipboard?.writeText(command).then(() => {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    }).catch(() => {})
+  }
+  const label = t(copied ? 'commandCopied' : 'copyCommand')
+  return (
+    <button type="button" className="dshHelmInstallCommand" title={label} aria-label={label} onClick={copy}>
+      <code className="dshHelmInstallCommandText">{command}</code>
+      <span className="dshHelmInstallCommandAction">{label}</span>
+    </button>
+  )
 }
 
 function stateKey(state: HelmUiRuntimeState): HelmLocaleKey {
@@ -135,7 +155,6 @@ function statusNeedsAttention(status: HelmUiStatus | undefined, requestError: bo
     ...(requestError ? { requestError: 'request error' } : {}),
     core: { state: status.core.state, ...(status.core.enabled === undefined ? {} : { enabled: status.core.enabled }), ...(status.core.message ? { message: status.core.message } : {}) },
     dependencies: [
-      { name: 'serena', state: status.dependencies.serena.state },
       { name: 'tunnelClient', state: status.dependencies.tunnelClient.state },
     ],
     tunnel: { state: status.tunnel.state },
@@ -159,6 +178,21 @@ export type HelmPanelProps = ChatGPTHelmAppProps
 type HelmIssue = { title: string; detail?: string }
 type HelmUpdateTarget = 'core' | 'localMcp' | 'externalAccess' | 'tunnelSetup'
 type HelmCapabilitySummaryItem = { icon: string; label: string }
+
+function requestErrorDetail(cause: unknown, t: HelmTranslate): string {
+  if (!isHelmUiRequestError(cause)) return cause instanceof Error ? cause.message : String(cause)
+  const status = String(cause.statusCode ?? 'unknown')
+  switch (cause.kind) {
+    case 'service-unreachable':
+      return t('localServiceUnreachable')
+    case 'transport-interrupted':
+      return cause.recoveredStatus ? t('localRequestRecoveredUnknown') : t('localRequestNoResponse')
+    case 'invalid-response':
+      return t('localServiceInvalidResponse', { status })
+    case 'http-error':
+      return t(cause.retryable ? 'localServiceHttpRetryable' : 'localServiceHttpRejected', { status, detail: cause.message })
+  }
+}
 
 export function shouldCompactCapabilitySummary(contentWidth: number, availableWidth: number): boolean {
   return shouldCompactHelmCapabilitySummary(contentWidth, availableWidth)
@@ -198,6 +232,7 @@ function TunnelSetupDialog({
   tunnelId,
   organizationId,
   runtimeApiKey,
+  proxyUrl,
   requestError,
   pendingInstall,
   pendingSave,
@@ -205,6 +240,7 @@ function TunnelSetupDialog({
   onTunnelIdChange,
   onOrganizationIdChange,
   onRuntimeApiKeyChange,
+  onProxyUrlChange,
   onInstallTunnelClient,
   onConfigure,
   onOpenUrl,
@@ -214,6 +250,7 @@ function TunnelSetupDialog({
   tunnelId: string
   organizationId: string
   runtimeApiKey: string
+  proxyUrl: string
   requestError: string | undefined
   pendingInstall: boolean
   pendingSave: boolean
@@ -221,6 +258,7 @@ function TunnelSetupDialog({
   onTunnelIdChange: (value: string) => void
   onOrganizationIdChange: (value: string) => void
   onRuntimeApiKeyChange: (value: string) => void
+  onProxyUrlChange: (value: string) => void
   onInstallTunnelClient: () => void
   onConfigure: () => void
   onOpenUrl: (url: string) => void
@@ -268,6 +306,8 @@ function TunnelSetupDialog({
             <label className="dshHelmField"><span>{t(agentHelmStep.fields[1].label.key)}</span><input className="dshHelmInput" value={organizationId} onChange={(event) => onOrganizationIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
             <label className="dshHelmField"><span>{t(agentHelmStep.fields[2].label.key)}</span><input className="dshHelmInput" type="password" value={runtimeApiKey} placeholder={tunnel.apiKeyConfigured ? t(agentHelmStep.fields[2].savedPlaceholder.key) : undefined} onChange={(event) => onRuntimeApiKeyChange(event.currentTarget.value)} autoComplete="new-password" spellCheck={false} /></label>
             <p className="dshHelmNote">{tunnel.apiKeyConfigured ? t(agentHelmStep.configuredNote.key) : t(agentHelmStep.missingNote.key)}</p>
+            <label className="dshHelmField"><span>{t(agentHelmStep.fields[3].label.key)}</span><input className="dshHelmInput" value={proxyUrl} placeholder={t(agentHelmStep.fields[3].savedPlaceholder.key)} onChange={(event) => onProxyUrlChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
+            <p className="dshHelmNote">{tunnel.proxyConfigured ? t(agentHelmStep.proxyConfiguredNote.key) : t(agentHelmStep.proxyMissingNote.key)}</p>
             <p className="dshHelmNote">{t(agentHelmStep.storageNote.key)}</p>
             <div className="dshHelmActions"><Button variant="primary" size="sm" disabled={pendingSave || !tunnelSetupCanSubmit({ tunnelId, apiKeyConfigured: tunnel.apiKeyConfigured ?? false, runtimeApiKey })} onClick={onConfigure}>{pendingSave ? t(agentHelmStep.submitting.key) : t(agentHelmStep.submitAction.key)}</Button></div>
           </section>
@@ -396,6 +436,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [tunnelId, setTunnelId] = useState('')
   const [organizationId, setOrganizationId] = useState('')
   const [runtimeApiKey, setRuntimeApiKey] = useState('')
+  const [proxyUrl, setProxyUrl] = useState('')
   const tunnelOnboardingAutoOpened = useRef(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number }>()
@@ -403,11 +444,12 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const refresh = useCallback(async () => {
     try {
       setStatus(await adapter.getStatus())
-      setError(undefined)
+      setError((current) => current?.target === 'status' ? undefined : current)
     } catch (cause) {
-      setError({ target: 'status', detail: cause instanceof Error ? cause.message : String(cause) })
+      setStatus(undefined)
+      setError({ target: 'status', detail: requestErrorDetail(cause, t) })
     }
-  }, [adapter])
+  }, [adapter, t])
 
   useLayoutEffect(() => {
     if (!open) return
@@ -448,9 +490,10 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     setTunnelId(status.tunnel.tunnelId ?? '')
     setOrganizationId(status.tunnel.organizationId ?? '')
     setRuntimeApiKey('')
+    setProxyUrl(status?.tunnel.proxyUrl ?? '')
     setOpen(false)
     setTunnelPanelOpen(true)
-  }, [status?.tunnel.organizationId, status?.tunnel.state, status?.tunnel.tunnelId])
+  }, [status?.tunnel.organizationId, status?.tunnel.proxyUrl, status?.tunnel.state, status?.tunnel.tunnelId])
 
   useEffect(() => {
     if (!open) return
@@ -479,7 +522,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
       setStatus(await adapter.installDependency(dependency))
       setError(undefined)
     } catch (cause) {
-      setError({ target: dependency, detail: cause instanceof Error ? cause.message : String(cause) })
+      setError({ target: dependency, detail: requestErrorDetail(cause, t) })
     } finally {
       setPendingInstall(undefined)
     }
@@ -495,7 +538,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
       setError(undefined)
       setConfirmCoreOff(false)
     } catch (cause) {
-      setError({ target, detail: cause instanceof Error ? cause.message : String(cause) })
+      setError({ target, detail: requestErrorDetail(cause, t) })
     } finally {
       setPendingTarget(undefined)
     }
@@ -507,7 +550,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
       setStatus(await adapter.setExternalUserAccess(capability, enabled))
       setError(undefined)
     } catch (cause) {
-      setError({ target: 'externalAccess', detail: cause instanceof Error ? cause.message : String(cause) })
+      setError({ target: 'externalAccess', detail: requestErrorDetail(cause, t) })
     } finally {
       setPendingTarget(undefined)
     }
@@ -517,6 +560,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     setTunnelId(status?.tunnel.tunnelId ?? '')
     setOrganizationId(status?.tunnel.organizationId ?? '')
     setRuntimeApiKey('')
+    setProxyUrl(status?.tunnel.proxyUrl ?? '')
     setOpen(false)
     setTunnelPanelOpen(true)
   }
@@ -527,14 +571,17 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
       tunnelId,
       ...(organizationId.trim() ? { organizationId } : {}),
       ...(runtimeApiKey.trim() ? { apiKey: runtimeApiKey } : {}),
+      proxyUrl,
     }
     try {
       const next = await adapter.configureTunnel(input)
       setStatus(next)
       setRuntimeApiKey('')
+      setProxyUrl(next.tunnel.proxyUrl ?? '')
       setError(undefined)
     } catch (cause) {
-      setError({ target: 'tunnelSetup', detail: cause instanceof Error ? cause.message : String(cause) })
+      if (isHelmUiRequestError(cause) && cause.recoveredStatus) setStatus(cause.recoveredStatus)
+      setError({ target: 'tunnelSetup', detail: requestErrorDetail(cause, t) })
     } finally {
       setPendingTarget(undefined)
     }
@@ -544,11 +591,12 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     setExpandedRow((current) => current === row ? undefined : row)
   }
   const tunnelManagementUrl = status?.tunnel.state === 'running' ? status.tunnel.adminUrl : undefined
-  const tunnelIssue = Boolean(status && (error?.target === 'status' || error?.target === 'tunnelClient' || error?.target === 'tunnelSetup' || status.dependencies.tunnelClient.state === 'unavailable' || status.tunnel.state === 'missing-config' || status.tunnel.state === 'stopped'))
-  const tunnelIssueDetail = error?.detail ?? status?.tunnel.error?.message ?? (status?.tunnel.missingEnvironment?.length ? t('tunnelConfigDetails', { names: status.tunnel.missingEnvironment.join(', ') }) : undefined)
+  const tunnelActionError = error?.target === 'tunnelClient' || error?.target === 'tunnelSetup' ? error : undefined
+  const tunnelIssue = Boolean(status && (tunnelActionError || status.dependencies.tunnelClient.state === 'unavailable' || status.tunnel.state === 'missing-config' || status.tunnel.state === 'stopped'))
+  const tunnelIssueDetail = tunnelActionError?.detail ?? status?.tunnel.error?.message ?? (status?.tunnel.missingEnvironment?.length ? t('tunnelConfigDetails', { names: status.tunnel.missingEnvironment.join(', ') }) : undefined)
   const tunnelIssueInfo: HelmIssue | undefined = tunnelIssue
     ? {
-        title: error?.target === 'status' || error?.target === 'tunnelClient' ? t('statusReadIssue') : error?.target === 'tunnelSetup' ? t('settingUpdateIssue') : status?.dependencies.tunnelClient.state === 'unavailable' ? t('tunnelDependencyIssue') : status?.tunnel.state === 'missing-config' ? t('tunnelConfigIssue') : t('tunnelStoppedIssue'),
+        title: tunnelActionError?.target === 'tunnelClient' ? t('statusReadIssue') : tunnelActionError?.target === 'tunnelSetup' ? t('settingUpdateIssue') : status?.dependencies.tunnelClient.state === 'unavailable' ? t('tunnelDependencyIssue') : status?.tunnel.state === 'missing-config' ? t('tunnelConfigIssue') : t('tunnelStoppedIssue'),
         ...(tunnelIssueDetail ? { detail: tunnelIssueDetail } : {}),
       }
     : undefined
@@ -566,9 +614,12 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     command: effectivePolicy.delegation,
   }).map(({ icon, labelKey }) => ({ icon, label: t(labelKey) }))
   const capabilityTriggerIcons = capabilitySummaryItems.map(({ icon, label }) => <span key={label}>{icon}</span>)
-  const attentionTitle = tunnelIssueInfo
+  const globalStatusIssue = error?.target === 'status'
+    ? `${t('statusReadIssue')}：${error.detail}`
+    : undefined
+  const attentionTitle = globalStatusIssue ?? (tunnelIssueInfo
     ? tunnelIssueInfo.detail ? `${tunnelIssueInfo.title}：${tunnelIssueInfo.detail}` : tunnelIssueInfo.title
-    : t('needsAttention')
+    : t('needsAttention'))
 
   return (
     <div ref={rootRef} className="dshHelmLayer" data-rail={!wide || undefined}>
@@ -577,10 +628,18 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
           <div className="dshHelmBody">
             {!status && !error && <p className="dshHelmLoading">{t('loading')}</p>}
             {!status && error?.target === 'status' ? (
-              <div className="dshHelmRequestError">
-                <span>{t('statusReadIssue')}</span>
-                <StatusIssue issue={{ title: t('statusReadIssue'), detail: t('statusReadDetails') }} />
-              </div>
+              <>
+                <StatusRow
+                  name={t('core')}
+                  description={t('coreDescription')}
+                  state="unavailable"
+                  t={t}
+                  issue={{ title: t('coreIssue'), detail: error.detail }}
+                />
+                <div className="dshHelmDetails">
+                  <p className="dshHelmDetailsText" data-error="true">{error.detail}</p>
+                </div>
+              </>
             ) : null}
             {status && (
               <>
@@ -638,9 +697,11 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       {status.dependencies.serena.state === 'unavailable' ? (
                         <>
                           <p className="dshHelmDetailsText" data-error="true">{status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription')}</p>
-                          {status.dependencies.serena.installCommand ? <code className="dshHelmInstallCommand">{status.dependencies.serena.installCommand}</code> : null}
+                          {status.dependencies.serena.installCommand ? <CopyableCommand command={status.dependencies.serena.installCommand} t={t} /> : null}
                           <div className="dshHelmActions">
-                            {status.dependencies.serena.installCommand ? <Button variant="primary" size="sm" disabled={pendingInstall !== undefined} onClick={() => { void installDependency('serena') }}>{pendingInstall === 'serena' ? t('installing') : t('install')}</Button> : null}
+                            {status.dependencies.serena.installCommand ? (
+                              <Button variant="primary" size="sm" disabled={pendingInstall !== undefined} onClick={() => { void installDependency('serena') }}>{pendingInstall === 'serena' ? t('installing') : t('install')}</Button>
+                            ) : null}
                             {status.dependencies.serena.installUrl ? <Button variant={status.dependencies.serena.installCommand ? 'outline' : 'primary'} size="sm" onClick={() => openUrl(status.dependencies.serena.installUrl)}>{status.dependencies.serena.installCommand ? t('manualSetup') : t('goInstall')}</Button> : null}
                           </div>
                         </>
@@ -736,7 +797,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
             activities: t('sessionActivities'), chats: t('sessionChats'), workspace: t('sessionWorkspace'), created: t('sessionCreated'), updated: t('sessionUpdated'),
             chatSessions: t('sessionChatSessions'), viewChats: t('sessionViewChats'), originChat: t('sessionOriginChat'), boundChats: t('sessionBoundChats'),
             workContext: t('sessionWorkContext'), task: t('sessionTaskContext'), boundAt: t('sessionBoundAt'), unboundContext: t('sessionUnboundContext'),
-            openChat: t('sessionOpenChat'), sessionId: t('sessionIdValue'), copyId: t('sessionCopyId'), copied: t('sessionCopied'), refresh: t('sessionRefresh'), loadMore: t('sessionLoadMore'), actionRead: t('sessionActionRead'), actionSearch: t('sessionActionSearch'),
+            openChat: t('sessionOpenChat'), sessionId: t('sessionIdValue'), copyId: t('sessionCopyId'), copied: t('sessionCopied'), refresh: t('sessionRefresh'), loadMore: t('sessionLoadMore'), actionGeneric: t('sessionAction'), actionRead: t('sessionActionRead'), actionSearch: t('sessionActionSearch'),
             actionInspect: t('sessionActionInspect'), actionDiagnostic: t('sessionActionDiagnostic'), actionEdit: t('sessionActionEdit'), actionVerify: t('sessionActionVerify'), actionCommand: t('sessionActionCommand'),
             statusSuccess: t('sessionStatusSuccess'), statusError: t('sessionStatusError'), delegationCreated: t('sessionDelegationCreated'),
             delegationAttached: t('sessionDelegationAttached'), delegationPrompted: t('sessionDelegationPrompted'), delegationResumed: t('sessionDelegationResumed'),
@@ -753,13 +814,15 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
           tunnelId={tunnelId}
           organizationId={organizationId}
           runtimeApiKey={runtimeApiKey}
-          requestError={error?.target === 'status' || error?.target === 'tunnelClient' || error?.target === 'tunnelSetup' ? error.detail : undefined}
+          proxyUrl={proxyUrl}
+          requestError={error?.target === 'tunnelClient' || error?.target === 'tunnelSetup' ? error.detail : undefined}
           pendingInstall={pendingInstall === 'tunnelClient'}
           pendingSave={pendingTarget === 'tunnelSetup'}
           t={t}
           onTunnelIdChange={setTunnelId}
           onOrganizationIdChange={setOrganizationId}
           onRuntimeApiKeyChange={setRuntimeApiKey}
+          onProxyUrlChange={setProxyUrl}
           onInstallTunnelClient={() => { void installDependency('tunnelClient') }}
           onConfigure={() => { void configureTunnel() }}
           onOpenUrl={(url) => openUrl(url)}

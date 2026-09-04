@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChatSessionTimelineItem, DelegatedSession } from '@beforewave/agent-helm'
-import { normalizeWorkHistorySessions, workHistoryTimelinePurpose, type WorkHistorySession } from '@beforewave/agent-helm-ui-contract'
-import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, filterWorkHistoryTimeline, workHistoryTimelineExecutionDetail } from '../work-history.js'
+import type { ChatSessionTimelineItem } from '@beforewave/agent-helm'
+import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationDetail, type WorkHistoryPresentationLabel, type WorkHistoryPresentationTitle, type WorkHistorySession } from '@beforewave/agent-helm-ui-contract'
+import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, filterWorkHistoryTimeline } from '../work-history.js'
 import type { HelmSessionAdapter } from '../adapter.js'
 
 const CSS_ID = '@beforewave/dsh-with-chatgpt/session-activity'
@@ -9,7 +9,6 @@ const DETAIL_CACHE_LIMIT = 5
 
 type SessionDetailCacheEntry = {
   timeline: ChatSessionTimelineItem[]
-  delegations: DelegatedSession[]
 }
 
 export interface SessionActivityLabels {
@@ -41,6 +40,7 @@ export interface SessionActivityLabels {
   copied: string
   refresh: string
   loadMore: string
+  actionGeneric: string
   actionRead: string
   actionSearch: string
   actionInspect: string
@@ -108,43 +108,42 @@ function sessionContextFallback(labels: SessionActivityLabels): string {
 }
 
 
-function actionLabel(item: ChatSessionTimelineItem, labels: SessionActivityLabels): string {
-  const purpose = workHistoryTimelinePurpose(item)
-  if (purpose) return purpose
-  if (item.kind === 'delegation.created') return labels.delegationCreated
-  if (item.kind === 'delegation.attached') return labels.delegationAttached
-  if (item.kind === 'delegation.prompted') return labels.delegationPrompted
-  if (item.kind === 'delegation.resumed') return labels.delegationResumed
-  if (item.kind === 'delegation.status') return labels.delegationStatus
-  if (item.actionType === 'read') return labels.actionRead
-  if (item.actionType === 'search') return labels.actionSearch
-  if (item.actionType === 'inspect') return labels.actionInspect
-  if (item.actionType === 'diagnostic') return labels.actionDiagnostic
-  if (item.actionType === 'verify') return labels.actionVerify
-  if (item.actionType === 'command') return labels.actionCommand
+function presentationLabel(label: WorkHistoryPresentationLabel, labels: SessionActivityLabels): string {
+  if (label === 'activity') return labels.actionGeneric
+  if (label === 'delegation.created') return labels.delegationCreated
+  if (label === 'delegation.attached') return labels.delegationAttached
+  if (label === 'delegation.prompted') return labels.delegationPrompted
+  if (label === 'delegation.resumed') return labels.delegationResumed
+  if (label === 'delegation.status') return labels.delegationStatus
+  if (label === 'action.read') return labels.actionRead
+  if (label === 'action.search') return labels.actionSearch
+  if (label === 'action.inspect') return labels.actionInspect
+  if (label === 'action.diagnostic') return labels.actionDiagnostic
+  if (label === 'action.verify') return labels.actionVerify
+  if (label === 'action.command') return labels.actionCommand
   return labels.actionEdit
 }
 
-function subagentStatusLabel(status: ChatSessionTimelineItem['status'], labels: SessionActivityLabels): string | undefined {
+function presentationTitle(title: WorkHistoryPresentationTitle, labels: SessionActivityLabels): string {
+  return title.kind === 'text' ? title.text : presentationLabel(title.label, labels)
+}
+
+function statusLabel(status: string, labels: SessionActivityLabels): string {
+  if (status === 'success') return labels.statusSuccess
+  if (status === 'error') return labels.statusError
   if (status === 'idle') return labels.statusIdle
   if (status === 'running') return labels.statusRunning
   if (status === 'waiting') return labels.statusWaiting
   if (status === 'failed') return labels.statusFailed
   if (status === 'cancelled') return labels.statusCancelled
-  if (status === 'unknown') return labels.statusUnknown
-  return undefined
+  return labels.statusUnknown
 }
 
-function timelinePrimary(item: ChatSessionTimelineItem, labels: SessionActivityLabels): string | undefined {
-  if (item.kind === 'work') return workHistoryTimelineExecutionDetail(item)
-  if (item.kind === 'delegation.prompted') return item.message
-  if (item.kind === 'delegation.status') return subagentStatusLabel(item.status, labels)
-  return item.title ?? item.requirement ?? item.subagentSessionId
-}
-
-function delegationFor(item: ChatSessionTimelineItem, delegations: DelegatedSession[]): DelegatedSession | undefined {
-  if (!item.subagentId || !item.subagentSessionId) return undefined
-  return delegations.find((entry) => entry.subagentId === item.subagentId && entry.subagentSessionId === item.subagentSessionId)
+function presentationDetail(detail: WorkHistoryPresentationDetail, labels: SessionActivityLabels): string {
+  if (detail.kind === 'duration') return `${detail.durationMs} ms`
+  if (detail.kind === 'subagent-session') return `${labels.subagentSessionId}: ${detail.id}`
+  if (detail.kind === 'status') return statusLabel(detail.text, labels)
+  return detail.text
 }
 
 function rememberSessionDetail(cache: Map<string, SessionDetailCacheEntry>, sessionId: string, entry: SessionDetailCacheEntry): void {
@@ -162,7 +161,6 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string>()
   const [timeline, setTimeline] = useState<ChatSessionTimelineItem[]>([])
-  const [delegations, setDelegations] = useState<DelegatedSession[]>([])
   const [filter, setFilter] = useState<'all' | 'chatgpt' | 'subagent'>('all')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [copied, setCopied] = useState(false)
@@ -218,7 +216,6 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     setRefreshing(false)
     if (!selectedId) {
       setTimeline([])
-      setDelegations([])
       setLoading(false)
       return
     }
@@ -226,24 +223,18 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     if (cached) {
       rememberSessionDetail(detailCache.current, selectedId, cached)
       setTimeline(cached.timeline)
-      setDelegations(cached.delegations)
       setLoading(false)
       setError(undefined)
       return
     }
     let cancelled = false
     setTimeline([])
-    setDelegations([])
     setLoading(true)
-    void Promise.all([
-      adapter.getSessionTimeline(selectedId),
-      adapter.getSessionDelegations(selectedId),
-    ]).then(([nextTimeline, nextDelegations]) => {
+    void adapter.getSessionTimeline(selectedId).then((nextTimeline) => {
       if (cancelled) return
-      rememberSessionDetail(detailCache.current, selectedId, { timeline: nextTimeline, delegations: nextDelegations })
+      rememberSessionDetail(detailCache.current, selectedId, { timeline: nextTimeline })
       if (generation !== detailGeneration.current) return
       setTimeline(nextTimeline)
-      setDelegations(nextDelegations)
       setError(undefined)
     }).catch((cause) => {
       if (!cancelled && generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
@@ -272,14 +263,12 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     void Promise.all([
       adapter.getSession(refreshSessionId),
       adapter.getSessionTimeline(refreshSessionId),
-      adapter.getSessionDelegations(refreshSessionId),
-    ]).then(([nextSession, nextTimeline, nextDelegations]) => {
-      rememberSessionDetail(detailCache.current, refreshSessionId, { timeline: nextTimeline, delegations: nextDelegations })
+    ]).then(([nextSession, nextTimeline]) => {
+      rememberSessionDetail(detailCache.current, refreshSessionId, { timeline: nextTimeline })
       if (generation !== detailGeneration.current) return
       const normalized = normalizeWorkHistorySessions([nextSession])[0]
       if (normalized) setSessions((current) => current.map((session) => session.id === refreshSessionId ? normalized : session))
       setTimeline(nextTimeline)
-      setDelegations(nextDelegations)
       setExpanded(new Set())
       setError(undefined)
     }).catch((cause) => {
@@ -347,7 +336,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                     <div className="dshHelmSessionIdWrap"><button type="button" className="dshHelmSessionCopy" onClick={refreshSelected} disabled={refreshing}>↻ {labels.refresh}</button><span className="dshHelmSessionIdText">{labels.sessionId} {selected.id}</span><button type="button" className="dshHelmSessionCopy" onClick={copySessionId}>{copied ? labels.copied : labels.copyId}</button></div>
                   </div>
                   <div className="dshHelmSessionFacts">
-                    <div className="dshHelmSessionFactLabel">{labels.workspace}</div><div>{selected.workspace?.title ?? selected.workspace?.path ?? labels.unassignedWorkspace}</div>
+                    <div className="dshHelmSessionFactLabel">{labels.workspace}</div><div>{selectedDetail?.workspaceLabel ?? labels.unassignedWorkspace}</div>
                   </div>
                 </section>
                 <section className="dshHelmSessionContext" aria-label={labels.workContext}>
@@ -358,20 +347,10 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                       {chatUrls.map((url, index) => <button type="button" key={url} className="dshHelmContextChat" title={url} onClick={() => adapter.openUrl(url)}>{labels.openChat}{chatUrls.length > 1 ? ` ${index + 1}` : ''} ↗</button>)}
                     </div> : null}
                   </div>
-                  <article className="dshHelmContextCard">
-                    <div className="dshHelmContextHead">
-                      <span className="dshHelmContextRole">{labels.originChat}</span>
-                      <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
-                    </div>
-                    <details className="dshHelmContextTask">
-                      <summary>{labels.task}</summary>
-                      <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
-                    </details>
-                  </article>
                   {sortedBoundIntents.map((entry, index) => (
                     <article className="dshHelmContextCard" key={`${entry.boundAt}:${index}`}>
                       <div className="dshHelmContextHead">
-                        <span className="dshHelmContextRole">{labels.boundChats} {index + 1}</span>
+                        <span className="dshHelmContextRole">{labels.boundChats} {sortedBoundIntents.length - index}</span>
                         <span className="dshHelmContextMessage">{entry.intent.message}</span>
                       </div>
                       <div className="dshHelmContextMeta">
@@ -383,6 +362,16 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                       </details>
                     </article>
                   ))}
+                  <article className="dshHelmContextCard">
+                    <div className="dshHelmContextHead">
+                      <span className="dshHelmContextRole">{labels.originChat}</span>
+                      <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
+                    </div>
+                    <details className="dshHelmContextTask">
+                      <summary>{labels.task}</summary>
+                      <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
+                    </details>
+                  </article>
                 </section>
                 <nav className="dshHelmTimelineFilters" aria-label={labels.panelTitle}>
                   <button type="button" className="dshHelmTimelineFilter" data-active={filter === 'all'} onClick={() => setFilter('all')}>{labels.all}</button>
@@ -392,28 +381,25 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                 {error ? <div className="dshHelmSessionError">{labels.loadError}: {error}</div> : null}
                 <div className="dshHelmTimeline">
                   {loading ? <div className="dshHelmTimelineEmpty">{labels.loading}</div> : visibleTimeline.length ? visibleTimeline.map((item) => {
-                    const delegation = delegationFor(item, delegations)
+                    const presentation = normalizeWorkHistoryTimelinePresentation(item)
+                    const expandedSections = presentation.expanded ?? []
                     const isExpanded = expanded.has(item.id)
-                    const hasDetails = Boolean(delegation?.requirement || delegation?.prompts.length)
+                    const hasDetails = expandedSections.length > 0
+                    const expandedText = expandedSections.map((section) => section.kind === 'task'
+                      ? `${labels.fullTask}\n${section.text}`
+                      : `${labels.followUpPrompts}\n${section.items.map((prompt) => `• ${prompt}`).join('\n')}`).join('\n\n')
                     return (
                       <article className="dshHelmTimelineItem" key={`${item.sequence}:${item.id}`}>
                         <div className="dshHelmTimelineTime">{shortTimeLabel(item.timestamp)}</div>
                         <div className="dshHelmTimelineActor"><span className="dshHelmTimelineActorBadge">{item.actor === 'chatgpt' ? labels.chatgpt : item.actorName ?? labels.subagent}</span></div>
                         <div className="dshHelmTimelineContent">
-                          <div className="dshHelmTimelineTitle">{actionLabel(item, labels)}</div>
-                          {timelinePrimary(item, labels) ? <div className="dshHelmTimelinePrimary">{timelinePrimary(item, labels)}</div> : null}
+                          <div className="dshHelmTimelineTitle">{presentationTitle(presentation.title, labels)}</div>
+                          {presentation.primary ? <div className="dshHelmTimelinePrimary">{presentation.primary}</div> : null}
                           <div className="dshHelmTimelineSecondary">
-                            {item.tool ? <span>{item.tool}</span> : null}
-                            {item.workspace?.title ?? item.workspace?.path ? <span>{item.workspace?.title ?? item.workspace?.path}</span> : null}
-                            {item.status ? <span>{item.status === 'success' ? labels.statusSuccess : item.status === 'error' ? labels.statusError : subagentStatusLabel(item.status, labels)}</span> : null}
-                            {item.durationMs !== undefined ? <span>{item.durationMs} ms</span> : null}
-                            {item.subagentSessionId ? <span>{labels.subagentSessionId}: {item.subagentSessionId}</span> : null}
-                            {item.error?.message ? <span>{item.error.message}</span> : null}
+                            {presentation.details.map((detail, detailIndex) => <span key={detailIndex}>{presentationDetail(detail, labels)}</span>)}
                           </div>
-                          {item.kind === 'delegation.created' && item.requirement ? <div className="dshHelmTimelineText">{item.requirement}</div> : null}
-                          {item.kind === 'delegation.prompted' && item.message ? <div className="dshHelmTimelineText">{item.message}</div> : null}
                           {hasDetails ? <button type="button" className="dshHelmTimelineToggle" onClick={() => toggleExpanded(item.id)}>{isExpanded ? '−' : '+'} {labels.fullTask}</button> : null}
-                          {isExpanded && delegation ? <div className="dshHelmTimelineText">{delegation.requirement ? `${labels.fullTask}\n${delegation.requirement}` : ''}{delegation.prompts.length ? `${delegation.requirement ? '\n\n' : ''}${labels.followUpPrompts}\n${delegation.prompts.map((prompt) => `• ${prompt.message}`).join('\n')}` : ''}</div> : null}
+                          {isExpanded ? <div className="dshHelmTimelineText">{expandedText}</div> : null}
                         </div>
                       </article>
                     )

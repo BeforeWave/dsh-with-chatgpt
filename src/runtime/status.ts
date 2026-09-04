@@ -23,6 +23,8 @@ export interface HelmUiStatus {
     tunnelId?: string
     organizationId?: string
     apiKeyConfigured?: boolean
+    proxyConfigured?: boolean
+    proxyUrl?: string
     error?: { code: string; message: string }
     missingEnvironment?: string[]
     adminUrl?: string
@@ -111,6 +113,8 @@ function coreTunnelStatus(health: Record<string, unknown>): HelmUiStatus['tunnel
   const tunnelId = stringValue(tunnel.tunnelId)
   const organizationId = stringValue(tunnel.organizationId)
   const apiKeyConfigured = typeof tunnel.apiKeyConfigured === 'boolean' ? tunnel.apiKeyConfigured : undefined
+  const proxyConfigured = typeof tunnel.proxyConfigured === 'boolean' ? tunnel.proxyConfigured : undefined
+  const proxyUrl = stringValue(tunnel.proxyUrl)
   const adminUrl = stringValue(tunnel.adminUrl)
   const logsUrl = stringValue(tunnel.logsUrl)
   const errorValue = record(tunnel.error)
@@ -123,6 +127,8 @@ function coreTunnelStatus(health: Record<string, unknown>): HelmUiStatus['tunnel
     ...(tunnelId ? { tunnelId } : {}),
     ...(organizationId ? { organizationId } : {}),
     ...(apiKeyConfigured !== undefined ? { apiKeyConfigured } : {}),
+    ...(proxyConfigured !== undefined ? { proxyConfigured } : {}),
+    ...(proxyUrl ? { proxyUrl } : {}),
     ...(error ? { error } : {}),
     ...(adminUrl ? { adminUrl } : {}),
     ...(logsUrl ? { logsUrl } : {}),

@@ -53,8 +53,29 @@ export interface WorkHistorySessionDetailModel {
   runtimeLabel?: string
 }
 
-export function workHistorySessionTitle(session: Pick<WorkHistorySession, 'id' | 'originIntent'>): string {
-  return session.originIntent?.message.trim() || session.id
+function workHistoryTimestamp(value: string): number {
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY
+}
+
+function sortWorkHistoryBoundIntentsNewestFirst(entries: readonly WorkHistoryBoundConversationIntent[]): WorkHistoryBoundConversationIntent[] {
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((left, right) => workHistoryTimestamp(right.entry.boundAt) - workHistoryTimestamp(left.entry.boundAt) || right.index - left.index)
+    .map(({ entry }) => entry)
+}
+
+function sortWorkHistoryTimelineNewestFirst<T extends { timestamp: string; sequence?: number }>(timeline: readonly T[]): T[] {
+  return timeline
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const byTime = workHistoryTimestamp(right.item.timestamp) - workHistoryTimestamp(left.item.timestamp)
+      if (byTime) return byTime
+      const leftSequence = typeof left.item.sequence === 'number' ? left.item.sequence : left.index
+      const rightSequence = typeof right.item.sequence === 'number' ? right.item.sequence : right.index
+      return rightSequence - leftSequence
+    })
+    .map(({ item }) => item)
 }
 
 export function workHistorySessionWorkspaceId(session: WorkHistorySession): string | undefined {
@@ -62,7 +83,7 @@ export function workHistorySessionWorkspaceId(session: WorkHistorySession): stri
 }
 
 export function workHistorySessionWorkspaceLabel(session: WorkHistorySession): string | undefined {
-  return session.workspace?.title ?? session.workspace?.path ?? workHistorySessionWorkspaceId(session)
+  return session.presentation.workspaceLabel
 }
 
 export function createWorkHistoryWorkspaceSelectionModel(
@@ -100,7 +121,7 @@ export function createWorkHistorySessionListItem(session: WorkHistorySession): W
   const workspaceLabel = workHistorySessionWorkspaceLabel(session)
   return {
     id: session.id,
-    title: workHistorySessionTitle(session),
+    title: session.presentation.title,
     ...(workspaceId ? { workspaceId } : {}),
     ...(workspaceLabel ? { workspaceLabel } : {}),
     lastActivityAt: session.lastActivityAt,
@@ -180,7 +201,7 @@ export function createWorkHistorySessionDetailModel(session: WorkHistorySession)
   const workspaceLabel = workHistorySessionWorkspaceLabel(session)
   return {
     id: session.id,
-    title: workHistorySessionTitle(session),
+    title: session.presentation.title,
     ...(workspaceId ? { workspaceId } : {}),
     ...(workspaceLabel ? { workspaceLabel } : {}),
     createdAt: session.createdAt,
@@ -190,7 +211,7 @@ export function createWorkHistorySessionDetailModel(session: WorkHistorySession)
     chatCount: session.chatCount,
     delegationCount: session.delegationCount,
     ...(session.originIntent ? { originIntent: session.originIntent } : {}),
-    boundIntents: [...session.boundIntents],
+    boundIntents: sortWorkHistoryBoundIntentsNewestFirst(session.boundIntents),
     chatUrls: [...session.chatUrls],
     ...(session.agentLabel ? { agentLabel: session.agentLabel } : {}),
     ...(session.runtimeLabel ? { runtimeLabel: session.runtimeLabel } : {}),
@@ -199,14 +220,7 @@ export function createWorkHistorySessionDetailModel(session: WorkHistorySession)
 
 export type WorkHistoryActivityFilter = 'all' | 'chatgpt' | 'subagent'
 
-export function filterWorkHistoryTimeline<T extends { actor: string }>(timeline: readonly T[], filter: WorkHistoryActivityFilter): T[] {
-  return filter === 'all' ? [...timeline] : timeline.filter((item) => item.actor === filter)
-}
-
-export function workHistoryTimelineExecutionDetail(value: unknown): string | undefined {
-  const raw = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
-  const tool = typeof raw.tool === 'string' && raw.tool.length > 0 ? raw.tool : undefined
-  const primaryObject = typeof raw.primaryObject === 'string' && raw.primaryObject.length > 0 ? raw.primaryObject : undefined
-  if (tool && primaryObject) return tool + ' · ' + primaryObject
-  return tool ?? primaryObject
+export function filterWorkHistoryTimeline<T extends { actor: string; timestamp: string; sequence?: number }>(timeline: readonly T[], filter: WorkHistoryActivityFilter): T[] {
+  const filtered = filter === 'all' ? timeline : timeline.filter((item) => item.actor === filter)
+  return sortWorkHistoryTimelineNewestFirst(filtered)
 }
