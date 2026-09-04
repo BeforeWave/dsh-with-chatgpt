@@ -20,17 +20,49 @@ When a task is better suited for a coding agent to keep working on, ChatGPT can 
 
 ## Quick Start
 
-Install the plugin:
+Stable npm release:
 
-```bash id="muq8ix"
-dsh plugin --profile web add dsh-with-chatgpt
-```
+\`\`\`bash
+dsh plugin --profile web add @beforewave/dsh-with-chatgpt
+\`\`\`
+
+Install a specific npm version:
+
+\`\`\`bash
+dsh plugin --profile web add @beforewave/dsh-with-chatgpt@0.1.4
+\`\`\`
+
+GitHub install on macOS / Linux:
+
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh
+\`\`\`
+
+Install a specific version:
+
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh -s -- 0.1.4
+\`\`\`
+
+Windows x64:
+
+\`\`\`powershell
+irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1 | iex
+\`\`\`
+
+Install a specific version:
+
+\`\`\`powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1))) -Version 0.1.4
+\`\`\`
+
+The GitHub installer checks for \`dsh\` first. If DSH is missing, it exits without installing anything. If DSH is available, it downloads and verifies the selected GitHub Release tgz and installs that local artifact with \`dsh plugin add\`. The GitHub path never switches to npm.
 
 Start DSH:
 
-```bash id="3u3hcv"
+\`\`\`bash
 dsh web
-```
+\`\`\`
 
 On first run, DSH with ChatGPT checks your environment and walks you through the required installation, connection, and permission steps in the **Setup Guide**.
 

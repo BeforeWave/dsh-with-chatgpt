@@ -20,17 +20,49 @@
 
 ## 快速开始
 
-安装 Plugin：
+npm 稳定版：
 
-```bash
-dsh plugin --profile web add dsh-with-chatgpt
-```
+\`\`\`bash
+dsh plugin --profile web add @beforewave/dsh-with-chatgpt
+\`\`\`
+
+指定 npm 版本：
+
+\`\`\`bash
+dsh plugin --profile web add @beforewave/dsh-with-chatgpt@0.1.4
+\`\`\`
+
+GitHub 版本，macOS / Linux：
+
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh
+\`\`\`
+
+指定版本：
+
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh -s -- 0.1.4
+\`\`\`
+
+Windows x64：
+
+\`\`\`powershell
+irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1 | iex
+\`\`\`
+
+指定版本：
+
+\`\`\`powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1))) -Version 0.1.4
+\`\`\`
+
+GitHub 安装入口会先检查 \`dsh\`。如果没有安装 DSH，会直接退出；如果已经存在，则下载并校验指定 GitHub Release 的 tgz，再通过 \`dsh plugin add\` 安装。GitHub 安装入口不会切换到 npm。
 
 启动 DSH：
 
-```bash
+\`\`\`bash
 dsh web
-```
+\`\`\`
 
 首次运行时，DSH with ChatGPT 会检查当前环境，并通过 **Setup Guide** 引导你完成需要的安装、连接和授权。
 
