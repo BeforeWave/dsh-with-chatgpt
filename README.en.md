@@ -8,13 +8,13 @@
 
 **DSH with ChatGPT** is a plugin for DeepSeek Harness (DSH).
 
-You keep working in ChatGPT as usual.
+You keep working in ChatGPT in your browser as usual.
 
-The difference is that ChatGPT can now understand your real project, edit files, run commands, and inspect actual results without you constantly copying code, errors, and project context into the conversation.
+The difference is that ChatGPT can now understand your real project, edit files, run commands, and inspect results without you repeatedly copying code, errors, and project context into the conversation.
 
-DSH also gets a lightweight view for tracking the local work ChatGPT has done, including the project it is using, recent actions, and work history.
+Inside DSH, you also get a lightweight view for seeing the project currently associated with ChatGPT, the local actions it has performed, and its work history.
 
-When a task is better suited for a coding agent to keep working on, ChatGPT can create a native DSH Session and hand the task over.
+When a task is better suited for a coding agent to continue executing, ChatGPT can create a native DSH Session and hand the work over directly.
 
 <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
@@ -34,7 +34,7 @@ Install a specific npm version:
 dsh plugin --profile web add @beforewave/dsh-with-chatgpt@0.1.4
 ```
 
-GitHub install on macOS / Linux:
+GitHub release, macOS / Linux:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh
@@ -58,7 +58,7 @@ Install a specific version:
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1))) -Version 0.1.4
 ```
 
-The GitHub installer checks for `dsh` first. If DSH is missing, it exits without installing anything. If DSH is available, it downloads and verifies the selected GitHub Release tgz and installs that local artifact with `dsh plugin add`. The GitHub path never switches to npm.
+The GitHub installer checks for `dsh` first. If DSH is not installed, it exits immediately. If DSH is available, it downloads and verifies the selected GitHub Release tgz, then installs that artifact with `dsh plugin add`. The GitHub install path never switches to npm.
 
 ### 2. Start DSH
 
@@ -68,52 +68,54 @@ dsh web
 
 ### 3. Complete Setup and Verify
 
-On first run, DSH with ChatGPT checks your environment and walks you through the required installation, connection, and permission steps in the **Setup Guide**.
+On first run, DSH with ChatGPT checks the current environment and uses the **Setup Guide** to walk you through the required installation, connection, and permission steps.
 
 <img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
-Once setup is complete, go back to ChatGPT in your browser and start working directly with your local project.
+Once setup is complete, return to ChatGPT in your browser and start working directly with the local project.
 
-## Let ChatGPT Work with Your Local Project
+## Start from the ChatGPT You Already Use
 
-Through Agent Helm, ChatGPT in your browser can work directly against the real project on your machine, including:
+Open a conversation on `chatgpt.com`. Through Agent Helm, ChatGPT can start working directly with the local project.
 
-* Understanding the project structure and relevant context
-* Finding and reading files
-* Editing files
-* Running commands and development tools
-* Inspecting diagnostics and Git state
-* Checking build, test, and execution results
+It can:
 
-You no longer need to repeatedly paste code, errors, and project context into the conversation just to give ChatGPT enough information to work.
+* Understand the current project
+* Find and read relevant files
+* Edit files
+* Run commands and development tools
+* Inspect Diagnostics and Git state
+* Check build, test, and execution results
+* Hand work off to DSH when needed
+* Inspect the real results again after DSH finishes
 
-For focused tasks, ChatGPT can handle the work directly. For longer-running or more involved tasks, it can hand the work off to DSH.
+You no longer need to repeatedly paste code, errors, and project context into the conversation, or reorganize the task before handing it off to DSH.
 
-## Hand Work Off to DSH When Needed
+### Hand Work Off to DSH When Needed
 
-When a task involves substantial changes, builds, tests, or longer-running execution, ChatGPT can create a native DSH Session after it already understands the project and the task.
+When a task requires substantial changes, builds, tests, or continued execution, ChatGPT can create a native DSH Session after it already understands the project and the task.
 
-DSH can then continue the execution without requiring you to restate the context or rewrite the task from scratch.
+DSH can continue the execution without requiring you to restate the background or task requirements.
 
-Afterward, ChatGPT can inspect the real project again — including the code, diff, tests, and other execution results — and decide what to do next.
+Afterward, ChatGPT can inspect the real project again — including code, diff, test results, and other execution results — and decide what to do next.
 
 In short:
 
 ```text
 ChatGPT in your browser
-          │
-   Understands the project
-          │
-     ┌────┴────┐
-     │         │
- Works directly  Hands off to DSH
-                   │
-              DSH Session
-                   │
-              Keeps working
+        │
+ Understands the project
+        │
+   ┌────┴────┐
+   │         │
+Works directly  Hands off to DSH
+                  │
+             DSH Session
+                  │
+             Keeps working
 ```
 
-## View ChatGPT's Local Work in DSH
+### View ChatGPT's Local Work in DSH
 
 DSH with ChatGPT adds a lightweight view inside DSH for seeing the local work ChatGPT has performed.
 
@@ -128,41 +130,41 @@ You can see:
 
 <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
-This view is primarily for inspecting and managing ChatGPT's local work history. It does not change how native DSH Sessions themselves are used.
+This view is mainly for inspecting and managing ChatGPT's local work history. It does not change how native DSH Sessions are used.
 
-## Work History
+### Work History
 
 ChatGPT's local work is kept in Work History.
 
-You can come back later and see:
+You can come back later and find:
 
-* The original ChatGPT Conversation
+* The corresponding ChatGPT Conversation
 * The project and Worktree used
 * What ChatGPT did locally
 * The current or final status
 * Whether the work was handed off to DSH
-* Any associated DSH Session
+* The associated DSH Session
 
 <img width="1000" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
-Even after leaving the original conversation, you can still see what happened locally and where the work ended up.
+Even after leaving the original Conversation, you can still see what happened locally during that piece of work.
 
 ## Local Projects and Security
 
 Your projects and execution environment remain on your machine.
 
-ChatGPT receives the local information needed for the current task, such as relevant files, project structure, diagnostics, Git state, command output, and test results.
+ChatGPT receives the local information needed for the current task, including relevant files, project structure, Diagnostics, Git state, command output, and test results.
 
-What ChatGPT can access and execute depends on the currently authorized Workspace, capabilities, and permissions.
+What it can access and execute depends on the currently authorized Workspace, capabilities, and permissions.
 
-When ChatGPT performs local operations directly, Agent Helm provides the local capabilities and sandbox boundary. When a task is executed by DSH, it runs under the permissions and sandbox configuration of the corresponding DSH Session.
+When ChatGPT performs local operations directly, Agent Helm provides the local capabilities and Sandbox boundary. When a task is executed by DSH, it runs under the permissions and Sandbox configuration of the corresponding DSH Session.
 
 ## Related Projects
 
 | Project                                                                      | Purpose                                                                                                                    |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | [Agent Helm](https://github.com/BeforeWave/agent-helm)                       | Lets ChatGPT in your browser work directly with local projects and use local coding agents when needed                     |
-| [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) | Installs and manages Agent Helm from the browser and shows the local work associated with the current ChatGPT conversation |
+| [Agent Helm Extensions](https://github.com/BeforeWave/agent-helm-extensions) | Installs and manages Agent Helm from the browser and shows the local work associated with the current ChatGPT Conversation |
 
 ## Project Status
 
