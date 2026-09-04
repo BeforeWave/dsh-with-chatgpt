@@ -74,22 +74,24 @@ dsh web
 
 配置完成后，回到浏览器里的 ChatGPT，就可以直接基于本地项目开始工作。
 
-## 直接让 ChatGPT 使用本地项目
+## 从你正在用的 ChatGPT 开始
 
-通过 Agent Helm，浏览器里的 ChatGPT 可以直接基于你电脑上的真实项目工作，包括：
+打开 `chatgpt.com` 里的一个 Conversation，Extension 会识别当前对话，并关联它对应的本地工作。
 
-* 理解项目结构和相关内容
-* 查找和读取文件
+通过 Agent Helm，浏览器里的 ChatGPT 可以直接：
+
+* 理解当前项目
+* 查找和读取相关文件
 * 修改文件
 * 运行命令和工程工具
 * 查看 Diagnostics 和 Git 状态
 * 检查构建、测试和实际执行结果
+* 把任务交给本地 Coding Agent
+* Agent 完成后重新检查真实结果
 
-不需要为了让 ChatGPT 理解问题，反复把代码、报错和项目上下文复制到对话里。
+不需要反复把代码、报错和项目上下文复制进聊天框，也不用为了调用本地 Agent 再重新整理一遍任务。
 
-对于明确的任务，ChatGPT 可以直接完成；需要更长时间或者更多轮执行时，再交给 DSH。
-
-## 需要时交给 DSH
+### 需要时交给 DSH
 
 当任务需要大量修改、构建、测试或者持续执行时，ChatGPT 可以在已经理解项目和任务的基础上，直接创建原生 DSH Session。
 
@@ -113,7 +115,7 @@ ChatGPT 之后仍然可以重新检查真实项目中的代码、Diff、测试�
           持续执行
 ```
 
-## 在 DSH 里查看 ChatGPT 的本地工作
+### 在 DSH 里查看 ChatGPT 的本地工作
 
 DSH with ChatGPT 会在 DSH 里增加一个轻量入口，用来查看 ChatGPT 在本地做过的工作。
 
@@ -130,7 +132,7 @@ DSH with ChatGPT 会在 DSH 里增加一个轻量入口，用来查看 ChatGPT �
 
 这个入口主要用于查看和管理 ChatGPT 的本地工作记录，不会改变原生 DSH Session 的使用方式。
 
-## Work History
+### Work History
 
 ChatGPT 在本地做过的工作会保留在 Work History 中。
 
