@@ -16,57 +16,61 @@
 
 当任务更适合交给 Coding Agent 持续执行时，ChatGPT 可以直接创建原生 DSH Session 继续完成。
 
-<img width="2164" height="1666" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+<img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
 ## 快速开始
 
+### 1. 安装
+
 npm 稳定版：
 
-\`\`\`bash
+```bash
 dsh plugin --profile web add @beforewave/dsh-with-chatgpt
-\`\`\`
+```
 
 指定 npm 版本：
 
-\`\`\`bash
+```bash
 dsh plugin --profile web add @beforewave/dsh-with-chatgpt@0.1.4
-\`\`\`
+```
 
 GitHub 版本，macOS / Linux：
 
-\`\`\`bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh
-\`\`\`
+```
 
 指定版本：
 
-\`\`\`bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh -s -- 0.1.4
-\`\`\`
+```
 
 Windows x64：
 
-\`\`\`powershell
+```powershell
 irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1 | iex
-\`\`\`
+```
 
 指定版本：
 
-\`\`\`powershell
+```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1))) -Version 0.1.4
-\`\`\`
+```
 
-GitHub 安装入口会先检查 \`dsh\`。如果没有安装 DSH，会直接退出；如果已经存在，则下载并校验指定 GitHub Release 的 tgz，再通过 \`dsh plugin add\` 安装。GitHub 安装入口不会切换到 npm。
+GitHub 安装入口会先检查 `dsh`。如果没有安装 DSH，会直接退出；如果已经存在，则下载并校验指定 GitHub Release 的 tgz，再通过 `dsh plugin add` 安装。GitHub 安装入口不会切换到 npm。
 
-启动 DSH：
+### 2. 启动 DSH
 
-\`\`\`bash
+```bash
 dsh web
-\`\`\`
+```
+
+### 3. 完成配置并验证
 
 首次运行时，DSH with ChatGPT 会检查当前环境，并通过 **Setup Guide** 引导你完成需要的安装、连接和授权。
 
-<img width="2164" height="1666" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+<img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
 配置完成后，回到浏览器里的 ChatGPT，就可以直接基于本地项目开始工作。
 
@@ -122,7 +126,7 @@ DSH with ChatGPT 会在 DSH 里增加一个轻量入口，用来查看 ChatGPT �
 * 是否关联了 DSH Session
 * 对应的 DSH Session 信息
 
-<img width="906" height="1078" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
+<img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
 这个入口主要用于查看和管理 ChatGPT 的本地工作记录，不会改变原生 DSH Session 的使用方式。
 
@@ -139,7 +143,7 @@ ChatGPT 在本地做过的工作会保留在 Work History 中。
 * 是否交给过 DSH
 * 关联的 DSH Session
 
-<img width="2164" height="1666" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
+<img width="1000" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
 这样，即使已经离开原来的 Conversation，也可以知道之前这项工作在本地发生了什么。
 

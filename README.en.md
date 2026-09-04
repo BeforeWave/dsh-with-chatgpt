@@ -16,57 +16,61 @@ DSH also gets a lightweight view for tracking the local work ChatGPT has done, i
 
 When a task is better suited for a coding agent to keep working on, ChatGPT can create a native DSH Session and hand the task over.
 
-<img width="2164" height="1666" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+<img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
 
 ## Quick Start
 
+### 1. Install
+
 Stable npm release:
 
-\`\`\`bash
+```bash
 dsh plugin --profile web add @beforewave/dsh-with-chatgpt
-\`\`\`
+```
 
 Install a specific npm version:
 
-\`\`\`bash
+```bash
 dsh plugin --profile web add @beforewave/dsh-with-chatgpt@0.1.4
-\`\`\`
+```
 
 GitHub install on macOS / Linux:
 
-\`\`\`bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh
-\`\`\`
+```
 
 Install a specific version:
 
-\`\`\`bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.sh | sh -s -- 0.1.4
-\`\`\`
+```
 
 Windows x64:
 
-\`\`\`powershell
+```powershell
 irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1 | iex
-\`\`\`
+```
 
 Install a specific version:
 
-\`\`\`powershell
+```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install.ps1))) -Version 0.1.4
-\`\`\`
+```
 
-The GitHub installer checks for \`dsh\` first. If DSH is missing, it exits without installing anything. If DSH is available, it downloads and verifies the selected GitHub Release tgz and installs that local artifact with \`dsh plugin add\`. The GitHub path never switches to npm.
+The GitHub installer checks for `dsh` first. If DSH is missing, it exits without installing anything. If DSH is available, it downloads and verifies the selected GitHub Release tgz and installs that local artifact with `dsh plugin add`. The GitHub path never switches to npm.
 
-Start DSH:
+### 2. Start DSH
 
-\`\`\`bash
+```bash
 dsh web
-\`\`\`
+```
+
+### 3. Complete Setup and Verify
 
 On first run, DSH with ChatGPT checks your environment and walks you through the required installation, connection, and permission steps in the **Setup Guide**.
 
-<img width="2164" height="1666" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+<img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
 
 Once setup is complete, go back to ChatGPT in your browser and start working directly with your local project.
 
@@ -95,7 +99,7 @@ Afterward, ChatGPT can inspect the real project again — including the code, di
 
 In short:
 
-```text id="mkvy69"
+```text
 ChatGPT in your browser
           │
    Understands the project
@@ -122,7 +126,7 @@ You can see:
 * Whether a DSH Session is associated
 * The related DSH Session information
 
-<img width="906" height="1078" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
+<img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
 
 This view is primarily for inspecting and managing ChatGPT's local work history. It does not change how native DSH Sessions themselves are used.
 
@@ -139,7 +143,7 @@ You can come back later and see:
 * Whether the work was handed off to DSH
 * Any associated DSH Session
 
-<img width="2164" height="1666" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
+<img width="1000" alt="Work History" src="https://github.com/user-attachments/assets/6f8b7a88-99f0-4bdb-8abf-d9c0975c5f92" />
 
 Even after leaving the original conversation, you can still see what happened locally and where the work ended up.
 
