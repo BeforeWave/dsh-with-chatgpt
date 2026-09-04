@@ -6,7 +6,7 @@
 
 # DSH with ChatGPT
 
-**告别复制粘贴与 DSH Token 焦虑！让网页版 ChatGPT 直连本地项目、自己动手 Coding，复杂任务再交给 DSH 持续执行。**
+**告别复制粘贴与 DSH Token 焦虑！让网页版 ChatGPT 直连本地项目、自己动手 Coding，长任务交给 DSH 本地持续执行。**
 
 [![npm](https://img.shields.io/npm/v/@beforewave/dsh-with-chatgpt?color=blue\&style=flat-square)](https://www.npmjs.com/package/@beforewave/dsh-with-chatgpt)
 [![DSH](https://img.shields.io/badge/DeepSeek-Harness-blue?style=flat-square)](#-快速开始)
