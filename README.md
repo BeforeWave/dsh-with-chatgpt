@@ -76,9 +76,9 @@ dsh web
 
 ## 从你正在用的 ChatGPT 开始
 
-打开 `chatgpt.com` 里的一个 Conversation，Extension 会识别当前对话，并关联它对应的本地工作。
+打开 `chatgpt.com` 里的一个 Conversation，通过 Agent Helm，ChatGPT 可以直接基于本地项目开始工作。
 
-通过 Agent Helm，浏览器里的 ChatGPT 可以直接：
+它可以：
 
 * 理解当前项目
 * 查找和读取相关文件
@@ -86,10 +86,10 @@ dsh web
 * 运行命令和工程工具
 * 查看 Diagnostics 和 Git 状态
 * 检查构建、测试和实际执行结果
-* 把任务交给本地 Coding Agent
-* Agent 完成后重新检查真实结果
+* 在需要时把任务交给 DSH
+* DSH 完成后重新检查真实结果
 
-不需要反复把代码、报错和项目上下文复制进聊天框，也不用为了调用本地 Agent 再重新整理一遍任务。
+不需要反复把代码、报错和项目上下文复制进聊天框，也不用在交给 DSH 时重新整理一遍任务。
 
 ### 需要时交给 DSH
 
