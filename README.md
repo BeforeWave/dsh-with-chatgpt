@@ -16,12 +16,12 @@
 
 <br />
 <p align="center">
-  <sub>
-    Try
-    <a href="https://github.com/BeforeWave/agent-helm-extensions"><b>Agent Helm Extensions</b></a> · ChatGPT + local agents
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="https://github.com/BeforeWave/agent-helm"><b>Agent Helm</b></a> · local runtime
-  </sub>
+ <sub>
+  推荐
+  <a href="https://github.com/BeforeWave/agent-helm-extensions"><b>Agent Helm Extensions</b></a> · ChatGPT + 本地 Agent
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://github.com/BeforeWave/agent-helm"><b>Agent Helm</b></a> · 本地运行时
+</sub>
 </p>
 <p align="center">
   <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
