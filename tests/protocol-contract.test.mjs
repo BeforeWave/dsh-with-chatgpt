@@ -23,7 +23,7 @@ test('DSH Core RPC method paths stay on the frozen entry contract', () => {
 })
 
 test('DSH entry endpoint paths stay stable', () => {
-  assert.match(runtime, /join\(homedir\(\), '\.agent-helm', 'run', 'daemon\.sock'\)/)
+  assert.match(runtime, /process\.env\.AGENT_HELM_DAEMON_SOCKET\?\.trim\(\) \|\| defaultDaemonEndpoint\(homedir\(\)\)/)
   assert.match(http, /HELM_UI_STATUS_PATH = '\/api\/dsh-with-chatgpt\/status'/)
   assert.match(http, /HELM_SESSION_API_PATH = '\/api\/dsh-with-chatgpt\/sessions'/)
 })
