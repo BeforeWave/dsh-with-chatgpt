@@ -100,6 +100,8 @@ const css = `
 .dshHelmInstallCommandText{min-width:0;font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}
 .dshHelmInstallCommandAction{color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;font-weight:600;white-space:nowrap}
 .dshHelmField{display:flex;flex-direction:column;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px}
+.dshHelmFieldControl{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+.dshHelmFieldControl .dshHelmInput{min-width:0}
 .dshHelmInput{box-sizing:border-box;width:100%;height:32px;padding:5px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);font:12px/18px ui-monospace,SFMono-Regular,Menlo,monospace}
 .dshHelmInput:focus{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:0}
 .dshHelmStepTitle{color:var(--dsw-alias-label-primary);font-size:12px;line-height:18px;font-weight:600}
@@ -266,7 +268,7 @@ function TunnelSetupDialog({
 }): JSX.Element {
   const tunnel = status.tunnel
   const dependencyMissing = status.dependencies.tunnelClient.state === 'unavailable'
-  const [openAiStep, agentHelmStep, chatGptStep] = tunnelOnboardingSource.steps
+  const [agentHelmStep, openAiStep, chatGptStep] = tunnelOnboardingSource.steps
   return (
     <div className="dshHelmSessionScrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section id="dshHelmTunnelSetupDialog" className="dshHelmSessionPanel dshHelmTunnelDialog" role="dialog" aria-modal="true" aria-label={t(tunnelOnboardingSource.title.key)}>
@@ -282,34 +284,50 @@ function TunnelSetupDialog({
           {tunnel.missingEnvironment?.length ? <p className="dshHelmDetailsText" data-error="true">{t('tunnelConfigDetails', { names: tunnel.missingEnvironment.join(', ') })}</p> : null}
 
           <section className="dshHelmTunnelDialogStep">
-            <strong className="dshHelmStepTitle">{t(openAiStep.title.key)}</strong>
-            <p className="dshHelmDetailsText">{t(openAiStep.description.key)}</p>
-            <div className="dshHelmActions">
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.links[0].href)}>{t(openAiStep.links[0].label.key)}</Button>
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.links[1].href)}>{t(openAiStep.links[1].label.key)}</Button>
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.links[2].href)}>{t(openAiStep.links[2].label.key)}</Button>
-            </div>
-            {dependencyMissing ? <div className="dshHelmTunnelInstall">
-              <p className="dshHelmDetailsText" data-error="true">{t(openAiStep.dependency.required.key)}</p>
-              <p className="dshHelmNote">{t(openAiStep.dependency.installDescription.key)}</p>
-              <div className="dshHelmActions">
-                <Button variant="primary" size="sm" disabled={pendingInstall} onClick={onInstallTunnelClient}>{pendingInstall ? t(openAiStep.dependency.installing.key) : t(openAiStep.dependency.installAction.key)}</Button>
-                <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.dependency.downloadAction.href)}>{t(openAiStep.dependency.downloadAction.label.key)}</Button>
-              </div>
-            </div> : null}
-          </section>
-
-          <section className="dshHelmTunnelDialogStep">
             <strong className="dshHelmStepTitle">{t(agentHelmStep.title.key)}</strong>
             <p className="dshHelmDetailsText">{t(agentHelmStep.description.key)}</p>
-            <label className="dshHelmField"><span>{t(agentHelmStep.fields[0].label.key)}</span><input className="dshHelmInput" value={tunnelId} onChange={(event) => onTunnelIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
-            <label className="dshHelmField"><span>{t(agentHelmStep.fields[1].label.key)}</span><input className="dshHelmInput" value={organizationId} onChange={(event) => onOrganizationIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
-            <label className="dshHelmField"><span>{t(agentHelmStep.fields[2].label.key)}</span><input className="dshHelmInput" type="password" value={runtimeApiKey} placeholder={tunnel.apiKeyConfigured ? t(agentHelmStep.fields[2].savedPlaceholder.key) : undefined} onChange={(event) => onRuntimeApiKeyChange(event.currentTarget.value)} autoComplete="new-password" spellCheck={false} /></label>
+
+            <div className="dshHelmField">
+              <span>{t(agentHelmStep.fields[0].label.key)}</span>
+              <div className="dshHelmFieldControl">
+                <input className="dshHelmInput" value={tunnelId} onChange={(event) => onTunnelIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
+                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[0].helpLink.href)}>{t('fieldGet')}</Button>
+              </div>
+            </div>
+
+            <div className="dshHelmField">
+              <span>{t(agentHelmStep.fields[1].label.key)}</span>
+              <div className="dshHelmFieldControl">
+                <input className="dshHelmInput" type="password" value={runtimeApiKey} placeholder={tunnel.apiKeyConfigured ? t(agentHelmStep.fields[1].savedPlaceholder.key) : undefined} onChange={(event) => onRuntimeApiKeyChange(event.currentTarget.value)} autoComplete="new-password" spellCheck={false} />
+                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[1].helpLink.href)}>{t('fieldGet')}</Button>
+              </div>
+            </div>
             <p className="dshHelmNote">{tunnel.apiKeyConfigured ? t(agentHelmStep.configuredNote.key) : t(agentHelmStep.missingNote.key)}</p>
+
+            <div className="dshHelmField">
+              <span>{t(agentHelmStep.fields[2].label.key)}</span>
+              <div className="dshHelmFieldControl">
+                <input className="dshHelmInput" value={organizationId} onChange={(event) => onOrganizationIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
+                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[2].helpLink.href)}>{t('fieldGet')}</Button>
+              </div>
+            </div>
+
             <label className="dshHelmField"><span>{t(agentHelmStep.fields[3].label.key)}</span><input className="dshHelmInput" value={proxyUrl} placeholder={t(agentHelmStep.fields[3].savedPlaceholder.key)} onChange={(event) => onProxyUrlChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
             <p className="dshHelmNote">{tunnel.proxyConfigured ? t(agentHelmStep.proxyConfiguredNote.key) : t(agentHelmStep.proxyMissingNote.key)}</p>
             <p className="dshHelmNote">{t(agentHelmStep.storageNote.key)}</p>
             <div className="dshHelmActions"><Button variant="primary" size="sm" disabled={pendingSave || !tunnelSetupCanSubmit({ tunnelId, apiKeyConfigured: tunnel.apiKeyConfigured ?? false, runtimeApiKey })} onClick={onConfigure}>{pendingSave ? t(agentHelmStep.submitting.key) : t(agentHelmStep.submitAction.key)}</Button></div>
+          </section>
+
+          <section className="dshHelmTunnelDialogStep">
+            <strong className="dshHelmStepTitle">{t(openAiStep.title.key)}</strong>
+            <p className="dshHelmDetailsText">{t(openAiStep.description.key)}</p>
+            <p className="dshHelmNote">{t(openAiStep.dependency.installDescription.key)}</p>
+            <div className="dshHelmActions">
+              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.links[0].href)}>{t(openAiStep.links[0].label.key)}</Button>
+              {dependencyMissing ? <Button variant="primary" size="sm" disabled={pendingInstall} onClick={onInstallTunnelClient}>{pendingInstall ? t(openAiStep.dependency.installing.key) : t(openAiStep.dependency.installAction.key)}</Button> : null}
+              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.dependency.downloadAction.href)}>{t(openAiStep.dependency.downloadAction.label.key)}</Button>
+            </div>
+            {dependencyMissing ? <p className="dshHelmDetailsText" data-error="true">{t(openAiStep.dependency.required.key)}</p> : null}
           </section>
 
           <section className="dshHelmTunnelDialogStep">
