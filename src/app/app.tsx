@@ -60,9 +60,25 @@ const css = `
 .dshHelmTunnelConfig:focus-visible{outline:1px solid var(--dsw-alias-border-l4);outline-offset:1px}
 .dshHelmTunnelInlineState{width:10px;height:10px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .dshHelmTunnelDialogStatus{display:inline-flex;align-items:center;gap:7px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px}
-.dshHelmTunnelDialogBody{min-height:0;flex:1;overflow:auto;padding:24px 28px 32px}
-.dshHelmTunnelDialogContent{width:min(760px,100%);margin:0 auto;display:flex;flex-direction:column;gap:18px}
-.dshHelmTunnelDialogStep{display:flex;flex-direction:column;gap:9px;padding:18px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-specific-menu)}
+.dshHelmTunnelHeaderTitle{min-width:0;flex:1;display:flex;align-items:center;gap:7px}
+.dshHelmTunnelScrim{padding:14px}
+.dshHelmSessionPanel.dshHelmTunnelDialog{width:min(960px,calc(100vw - 28px));height:auto;max-height:calc(100vh - 28px)}
+.dshHelmTunnelDialog .dshHelmSessionHeader{height:58px;padding:0 18px}
+.dshHelmTunnelDialogBody{min-height:0;flex:1 1 auto;overflow:auto;padding:14px 24px 24px}
+.dshHelmTunnelDialogContent{width:100%;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:14px;align-items:stretch}
+.dshHelmTunnelDialogMain,.dshHelmTunnelDialogAside{min-width:0;height:100%;display:flex;flex-direction:column;gap:14px}
+.dshHelmTunnelDialogMain>.dshHelmTunnelDialogStep{height:100%}
+.dshHelmTunnelDialogAside>.dshHelmTunnelDialogStep{flex:1}
+.dshHelmTunnelDialogErrors{grid-column:1/-1;max-height:84px;overflow:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px}
+.dshHelmTunnelDialogStep{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-specific-menu)}
+.dshHelmTunnelStepHeading{display:flex;align-items:center;gap:6px;min-height:22px}
+.dshHelmTunnelStepState,.dshHelmFieldState{display:inline-flex;align-items:center;gap:5px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;font-weight:500}
+.dshHelmTunnelInfoButton{box-sizing:border-box;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0;border:1px solid var(--dsw-alias-border-l3);border-radius:50%;background:transparent;color:var(--dsw-alias-label-secondary);font:600 11px/1 ui-sans-serif,system-ui;cursor:help}
+.dshHelmTunnelInfoButton:hover,.dshHelmTunnelInfoButton:focus-visible{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary);outline:none}
+.dshHelmTunnelPrimaryActions{align-items:center}
+.dshHelmExternalLink{display:inline-flex;align-items:center;gap:4px;padding:0;border:0;background:transparent;color:var(--dsw-alias-state-business-primary);font:13px/20px inherit;font-weight:550;cursor:pointer;text-align:left}.dshHelmExternalLink:hover{text-decoration:underline}.dshHelmExternalLink:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.dshHelmTunnelInstallState:disabled{opacity:.65}
+@media(max-width:900px){.dshHelmTunnelDialogBody{padding:12px}.dshHelmTunnelDialogContent{grid-template-columns:1fr}.dshHelmTunnelDialogErrors{grid-column:1}.dshHelmTunnelDialogAside{gap:12px}}
 .dshHelmTunnelInstall{margin-top:4px;padding:12px;border-radius:9px;background:var(--dsw-alias-interactive-bg-hover);display:flex;flex-direction:column;gap:6px}
 .dshHelmDetails{box-sizing:border-box;padding:10px 11px 11px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .dshHelmGroupBody{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2)}
@@ -78,7 +94,7 @@ const css = `
 .dshHelmCapabilityRow:focus-visible{outline:1px solid var(--dsw-alias-border-l4);outline-offset:-2px}
 .dshHelmExpandButton{box-sizing:border-box;width:28px;height:28px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:50%;color:var(--dsw-alias-label-tertiary);transition:background-color .12s var(--ds-ease-in-out),color .12s var(--ds-ease-in-out)}
 .dshHelmCapabilityRow:hover .dshHelmExpandButton{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.dshHelmDetailsText{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
+.dshHelmDetailsText{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px;overflow-wrap:anywhere}
 .dshHelmDetailsText[data-error=true]{color:var(--dsw-alias-state-error-primary)}
 .dshHelmNote{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
 .dshHelmActions{display:flex;gap:8px;flex-wrap:wrap;padding-top:9px}
@@ -94,17 +110,15 @@ const css = `
 .dshHelmConfirm{position:absolute;right:0;bottom:calc(100% + 6px);z-index:2;width:230px;padding:9px 10px;border:1px solid var(--dsw-alias-state-error-primary);border-radius:9px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv2)}
 .dshHelmConfirmText{margin:0 0 8px;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:16px}
 .dshHelmConfirmActions{display:flex;gap:8px;justify-content:flex-end}
-.dshHelmInstallCommand{box-sizing:border-box;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;margin:8px 0 0;padding:7px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);text-align:left;cursor:pointer}
-.dshHelmInstallCommand:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dshHelmInstallCommand:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
-.dshHelmInstallCommandText{min-width:0;font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}
-.dshHelmInstallCommandAction{color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px;font-weight:600;white-space:nowrap}
-.dshHelmField{display:flex;flex-direction:column;gap:4px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:16px}
-.dshHelmFieldControl{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+.dshHelmInstallCommand{box-sizing:border-box;width:100%;display:block;margin:8px 0 0;padding:7px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);text-align:left}
+.dshHelmInstallCommandText{display:block;min-width:0;width:100%;font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap;user-select:text}
+.dshHelmOperationError{box-sizing:border-box;max-height:108px;overflow:auto;padding-right:4px;white-space:pre-wrap}
+.dshHelmField{display:flex;flex-direction:column;gap:5px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px}.dshHelmFieldLabel{display:inline-flex;align-items:center;gap:5px;width:max-content;max-width:100%}
+.dshHelmFieldControl{display:grid;grid-template-columns:minmax(0,460px) auto;align-items:center;gap:8px;width:max-content;max-width:100%}
 .dshHelmFieldControl .dshHelmInput{min-width:0}
-.dshHelmInput{box-sizing:border-box;width:100%;height:32px;padding:5px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);font:12px/18px ui-monospace,SFMono-Regular,Menlo,monospace}
+.dshHelmInput{box-sizing:border-box;width:100%;height:36px;padding:6px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-menu);color:var(--dsw-alias-label-primary);font:13px/20px ui-monospace,SFMono-Regular,Menlo,monospace}
 .dshHelmInput:focus{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:0}
-.dshHelmStepTitle{color:var(--dsw-alias-label-primary);font-size:12px;line-height:18px;font-weight:600}
+.dshHelmStepTitle{color:var(--dsw-alias-label-primary);font-size:14px;line-height:20px;font-weight:650}
 `
 
 export function installHelmStyles(): () => void {
@@ -118,20 +132,11 @@ export function installHelmStyles(): () => void {
   return () => tag.remove()
 }
 
-function CopyableCommand({ command, t }: { command: string; t: HelmTranslate }): React.JSX.Element {
-  const [copied, setCopied] = useState(false)
-  const copy = () => {
-    void navigator.clipboard?.writeText(command).then(() => {
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    }).catch(() => {})
-  }
-  const label = t(copied ? 'commandCopied' : 'copyCommand')
+function InstallCommand({ command }: { command: string }): React.JSX.Element {
   return (
-    <button type="button" className="dshHelmInstallCommand" title={label} aria-label={label} onClick={copy}>
+    <div className="dshHelmInstallCommand">
       <code className="dshHelmInstallCommandText">{command}</code>
-      <span className="dshHelmInstallCommandAction">{label}</span>
-    </button>
+    </div>
   )
 }
 
@@ -220,6 +225,19 @@ function ExpandChevron({ expanded }: { expanded: boolean }): JSX.Element {
   )
 }
 
+function TunnelGuidanceText({ text }: { text: string }): JSX.Element {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean)
+  return <p className="dshHelmDetailsText">{parts.map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index}>{part.slice(2, -2)}</strong> : part)}</p>
+}
+
+function TunnelInfo({ label }: { label: string }): JSX.Element {
+  return (
+    <Tooltip label={label} side="top" delayMs={0} maxWidth={320}>
+      <button type="button" className="dshHelmTunnelInfoButton" aria-label={label}>i</button>
+    </Tooltip>
+  )
+}
+
 function TunnelConfigIcon(): JSX.Element {
   return (
     <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none">
@@ -269,75 +287,97 @@ function TunnelSetupDialog({
   const tunnel = status.tunnel
   const dependencyMissing = status.dependencies.tunnelClient.state === 'unavailable'
   const [agentHelmStep, openAiStep, chatGptStep] = tunnelOnboardingSource.steps
+  const hasErrors = Boolean(requestError || tunnel.error?.message || tunnel.missingEnvironment?.length)
+  const canSubmit = tunnelSetupCanSubmit({ tunnelId, apiKeyConfigured: tunnel.apiKeyConfigured ?? false, runtimeApiKey })
+  const configurationReady = tunnel.configured ?? Boolean(tunnel.tunnelId && tunnel.apiKeyConfigured)
   return (
-    <div className="dshHelmSessionScrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <div className="dshHelmSessionScrim dshHelmTunnelScrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section id="dshHelmTunnelSetupDialog" className="dshHelmSessionPanel dshHelmTunnelDialog" role="dialog" aria-modal="true" aria-label={t(tunnelOnboardingSource.title.key)}>
         <header className="dshHelmSessionHeader">
-          <div className="dshHelmSessionHeaderTitle">{t(tunnelOnboardingSource.title.key)}</div>
+          <div className="dshHelmTunnelHeaderTitle">
+            <div className="dshHelmSessionHeaderTitle">{t(tunnelOnboardingSource.title.key)}</div>
+          </div>
           <div className="dshHelmTunnelDialogStatus" role="status"><StateDot state={dotState(tunnel.state)} size={8} /><span>{t(stateKey(tunnel.state))}</span></div>
           <button type="button" className="dshHelmSessionClose" aria-label={t('sessionClose')} onClick={onClose}>×</button>
         </header>
         <div className="dshHelmTunnelDialogBody"><div className="dshHelmTunnelDialogContent">
-          <p className="dshHelmDetailsText">{t(tunnelOnboardingSource.description.key)}</p>
-          {requestError ? <p className="dshHelmDetailsText" data-error="true">{requestError}</p> : null}
-          {tunnel.error?.message ? <p className="dshHelmDetailsText" data-error="true">{tunnel.error.message}</p> : null}
-          {tunnel.missingEnvironment?.length ? <p className="dshHelmDetailsText" data-error="true">{t('tunnelConfigDetails', { names: tunnel.missingEnvironment.join(', ') })}</p> : null}
+          {hasErrors ? (
+            <div className="dshHelmTunnelDialogErrors">
+              {requestError ? <p className="dshHelmDetailsText" data-error="true">{requestError}</p> : null}
+              {tunnel.error?.message ? <p className="dshHelmDetailsText" data-error="true">{tunnel.error.message}</p> : null}
+              {tunnel.missingEnvironment?.length ? <p className="dshHelmDetailsText" data-error="true">{t('tunnelConfigDetails', { names: tunnel.missingEnvironment.join(', ') })}</p> : null}
+            </div>
+          ) : null}
 
-          <section className="dshHelmTunnelDialogStep">
-            <strong className="dshHelmStepTitle">{t(agentHelmStep.title.key)}</strong>
-            <p className="dshHelmDetailsText">{t(agentHelmStep.description.key)}</p>
-
-            <div className="dshHelmField">
-              <span>{t(agentHelmStep.fields[0].label.key)}</span>
-              <div className="dshHelmFieldControl">
-                <input className="dshHelmInput" value={tunnelId} onChange={(event) => onTunnelIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
-                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[0].helpLink.href)}>{t('fieldGet')}</Button>
+          <div className="dshHelmTunnelDialogMain">
+            <section className="dshHelmTunnelDialogStep">
+              <div className="dshHelmTunnelStepHeading">
+                <strong className="dshHelmStepTitle">{t(agentHelmStep.title.key)}</strong>
+                {configurationReady ? <span className="dshHelmTunnelStepState"><StateDot state={dotState('ready')} size={7} /><span>{t(stateKey('ready'))}</span></span> : null}
               </div>
-            </div>
+              <p className="dshHelmDetailsText">{t(agentHelmStep.description.key)}</p>
 
-            <div className="dshHelmField">
-              <span>{t(agentHelmStep.fields[1].label.key)}</span>
-              <div className="dshHelmFieldControl">
-                <input className="dshHelmInput" type="password" value={runtimeApiKey} placeholder={tunnel.apiKeyConfigured ? t(agentHelmStep.fields[1].savedPlaceholder.key) : undefined} onChange={(event) => onRuntimeApiKeyChange(event.currentTarget.value)} autoComplete="new-password" spellCheck={false} />
-                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[1].helpLink.href)}>{t('fieldGet')}</Button>
+              <div className="dshHelmField">
+                <span className="dshHelmFieldLabel">{t(agentHelmStep.fields[0].label.key)} <TunnelInfo label={t(agentHelmStep.fields[0].description.key)} /></span>
+                <div className="dshHelmFieldControl">
+                  <input className="dshHelmInput" value={tunnelId} onChange={(event) => onTunnelIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
+                  <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(agentHelmStep.fields[0].helpLink.href)}>{t('fieldGet')} <span aria-hidden="true">↗</span></button>
+                </div>
               </div>
-            </div>
-            <p className="dshHelmNote">{tunnel.apiKeyConfigured ? t(agentHelmStep.configuredNote.key) : t(agentHelmStep.missingNote.key)}</p>
 
-            <div className="dshHelmField">
-              <span>{t(agentHelmStep.fields[2].label.key)}</span>
-              <div className="dshHelmFieldControl">
-                <input className="dshHelmInput" value={organizationId} onChange={(event) => onOrganizationIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
-                <Button variant="outline" size="sm" onClick={() => onOpenUrl(agentHelmStep.fields[2].helpLink.href)}>{t('fieldGet')}</Button>
+              <div className="dshHelmField">
+                <span className="dshHelmFieldLabel">{t(agentHelmStep.fields[1].label.key)} <TunnelInfo label={t(agentHelmStep.fields[1].description.key)} /></span>
+                <div className="dshHelmFieldControl">
+                  <input className="dshHelmInput" type="password" value={runtimeApiKey} placeholder={tunnel.apiKeyConfigured ? t(agentHelmStep.fields[1].savedPlaceholder.key) : undefined} onChange={(event) => onRuntimeApiKeyChange(event.currentTarget.value)} autoComplete="new-password" spellCheck={false} />
+                  <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(agentHelmStep.fields[1].helpLink.href)}>{t('fieldGet')} <span aria-hidden="true">↗</span></button>
+                </div>
               </div>
-            </div>
 
-            <label className="dshHelmField"><span>{t(agentHelmStep.fields[3].label.key)}</span><input className="dshHelmInput" value={proxyUrl} placeholder={t(agentHelmStep.fields[3].savedPlaceholder.key)} onChange={(event) => onProxyUrlChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></label>
-            <p className="dshHelmNote">{tunnel.proxyConfigured ? t(agentHelmStep.proxyConfiguredNote.key) : t(agentHelmStep.proxyMissingNote.key)}</p>
-            <p className="dshHelmNote">{t(agentHelmStep.storageNote.key)}</p>
-            <div className="dshHelmActions"><Button variant="primary" size="sm" disabled={pendingSave || !tunnelSetupCanSubmit({ tunnelId, apiKeyConfigured: tunnel.apiKeyConfigured ?? false, runtimeApiKey })} onClick={onConfigure}>{pendingSave ? t(agentHelmStep.submitting.key) : t(agentHelmStep.submitAction.key)}</Button></div>
-          </section>
+              <div className="dshHelmField">
+                <span className="dshHelmFieldLabel">{t(agentHelmStep.fields[2].label.key)} <TunnelInfo label={t(agentHelmStep.fields[2].description.key)} /></span>
+                <div className="dshHelmFieldControl" data-size="compact">
+                  <input className="dshHelmInput" value={organizationId} onChange={(event) => onOrganizationIdChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} />
+                  <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(agentHelmStep.fields[2].helpLink.href)}>{t('fieldGet')} <span aria-hidden="true">↗</span></button>
+                </div>
+              </div>
 
-          <section className="dshHelmTunnelDialogStep">
-            <strong className="dshHelmStepTitle">{t(openAiStep.title.key)}</strong>
-            <p className="dshHelmDetailsText">{t(openAiStep.description.key)}</p>
-            <p className="dshHelmNote">{t(openAiStep.dependency.installDescription.key)}</p>
-            <div className="dshHelmActions">
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.links[0].href)}>{t(openAiStep.links[0].label.key)}</Button>
-              {dependencyMissing ? <Button variant="primary" size="sm" disabled={pendingInstall} onClick={onInstallTunnelClient}>{pendingInstall ? t(openAiStep.dependency.installing.key) : t(openAiStep.dependency.installAction.key)}</Button> : null}
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(openAiStep.dependency.downloadAction.href)}>{t(openAiStep.dependency.downloadAction.label.key)}</Button>
-            </div>
-            {dependencyMissing ? <p className="dshHelmDetailsText" data-error="true">{t(openAiStep.dependency.required.key)}</p> : null}
-          </section>
+              <div className="dshHelmField">
+                <span className="dshHelmFieldLabel">{t(agentHelmStep.fields[3].label.key)} <TunnelInfo label={t(agentHelmStep.fields[3].description.key)} />{tunnel.proxyConfigured ? <span className="dshHelmFieldState">{t('configuredStatus')}</span> : null}</span>
+                <div className="dshHelmFieldControl" data-size="proxy"><input className="dshHelmInput" value={proxyUrl} placeholder={t(agentHelmStep.fields[3].savedPlaceholder.key)} onChange={(event) => onProxyUrlChange(event.currentTarget.value)} autoComplete="off" spellCheck={false} /></div>
+              </div>
+              <div className="dshHelmActions dshHelmTunnelPrimaryActions">
+                <Button variant="primary" size="sm" disabled={pendingSave || pendingInstall || !canSubmit} onClick={onConfigure}>{pendingSave ? t(agentHelmStep.submitting.key) : dependencyMissing ? t(agentHelmStep.saveAction.key) : t(agentHelmStep.submitAction.key)}</Button>
+                {dependencyMissing ? (
+                  <Button variant="outline" size="sm" disabled={pendingInstall || pendingSave} onClick={onInstallTunnelClient}>{pendingInstall ? t(openAiStep.dependency.installing.key) : t(openAiStep.dependency.installAction.key)}</Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="dshHelmTunnelInstallState" disabled>{t(openAiStep.dependency.installedAction.key)}</Button>
+                )}
+              </div>
+            </section>
+          </div>
 
-          <section className="dshHelmTunnelDialogStep">
-            <strong className="dshHelmStepTitle">{t(chatGptStep.title.key)}</strong>
-            <p className="dshHelmDetailsText">{t(chatGptStep.description.key)}</p>
-            <div className="dshHelmActions">
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(chatGptStep.links[0].href)}>{t(chatGptStep.links[0].label.key)}</Button>
-              <Button variant="outline" size="sm" onClick={() => onOpenUrl(chatGptStep.links[1].href)}>{t(chatGptStep.links[1].label.key)}</Button>
-            </div>
-          </section>
+          <div className="dshHelmTunnelDialogAside">
+            <section className="dshHelmTunnelDialogStep">
+              <div className="dshHelmTunnelStepHeading">
+                <strong className="dshHelmStepTitle">{t(openAiStep.title.key)}</strong>
+              </div>
+              <TunnelGuidanceText text={t(openAiStep.description.key)} />
+              <div className="dshHelmActions">
+                <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(openAiStep.dependency.downloadAction.href)}>{t(openAiStep.dependency.downloadAction.label.key)} <span aria-hidden="true">↗</span></button>
+              </div>
+            </section>
+
+            <section className="dshHelmTunnelDialogStep">
+              <div className="dshHelmTunnelStepHeading">
+                <strong className="dshHelmStepTitle">{t(chatGptStep.title.key)}</strong>
+              </div>
+              <TunnelGuidanceText text={t(chatGptStep.description.key)} />
+              <div className="dshHelmActions">
+                <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(chatGptStep.links[0].href)}>{t(chatGptStep.links[0].label.key)} <span aria-hidden="true">↗</span></button>
+                <button type="button" className="dshHelmExternalLink" onClick={() => onOpenUrl(chatGptStep.links[1].href)}>{t(chatGptStep.links[1].label.key)} <span aria-hidden="true">↗</span></button>
+              </div>
+            </section>
+          </div>
         </div></div>
       </section>
     </div>
@@ -711,11 +751,11 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                   detailsId="dshHelmLocalMcpDetails"
                   details={(
                     <>
-                      {error?.target === 'serena' || error?.target === 'localMcp' ? <p className="dshHelmDetailsText" data-error="true">{error.detail}</p> : null}
+                      {error?.target === 'serena' || error?.target === 'localMcp' ? <p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p> : null}
                       {status.dependencies.serena.state === 'unavailable' ? (
                         <>
                           <p className="dshHelmDetailsText" data-error="true">{status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription')}</p>
-                          {status.dependencies.serena.installCommand ? <CopyableCommand command={status.dependencies.serena.installCommand} t={t} /> : null}
+                          {status.dependencies.serena.installCommand ? <InstallCommand command={status.dependencies.serena.installCommand} /> : null}
                           <div className="dshHelmActions">
                             {status.dependencies.serena.installCommand ? (
                               <Button variant="primary" size="sm" disabled={pendingInstall !== undefined} onClick={() => { void installDependency('serena') }}>{pendingInstall === 'serena' ? t('installing') : t('install')}</Button>
@@ -763,9 +803,9 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       />
                     )}
                     issue={error?.target === 'core'
-                      ? { title: t('settingUpdateIssue'), detail: t('settingUpdateDetails') }
+                      ? { title: t('settingUpdateIssue'), detail: error.detail }
                       : status.core.message || status.core.state === 'unavailable'
-                        ? { title: t('coreIssue'), detail: t('coreIssueDetails') }
+                        ? { title: t('coreIssue'), detail: status.core.message ?? t('coreIssueDetails') }
                         : undefined}
                   />
                   {confirmCoreOff ? (

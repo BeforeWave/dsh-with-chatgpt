@@ -78,7 +78,7 @@ const css = `
 .dshHelmHistoryBody{min-height:0;flex:1;display:flex}.dshHelmSessionNav{width:292px;flex:none;border-right:1px solid var(--dsw-alias-border-l2);display:flex;flex-direction:column;min-height:0}.dshHelmSessionNavHead{height:48px;flex:none;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter{flex:none;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter select{min-width:0;height:30px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);padding:0 8px;font:inherit}.dshHelmSessionList{min-height:0;overflow:auto;padding:8px}.dshHelmSessionCard{width:100%;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:inherit;padding:11px 12px;cursor:pointer}.dshHelmSessionCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmSessionCard[data-active=true]{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l2)}.dshHelmSessionCardTitle{font-size:13px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionCardTime{margin-top:4px;font-size:12px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionCardMeta{margin-top:6px;display:flex;gap:9px;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionLoadMore{width:calc(100% - 8px);margin:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);padding:7px 8px;font:12px/18px inherit;cursor:pointer}.dshHelmSessionLoadMore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dshHelmSessionLoadMore:disabled{opacity:.55;cursor:default}
 .dshHelmSessionDetail{min-width:0;flex:1;display:flex;flex-direction:column}.dshHelmSessionSummary{box-sizing:border-box;flex:none;padding:14px 20px 12px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmSessionSummaryTop{display:flex;align-items:flex-start;gap:16px}.dshHelmSessionSummaryMain{min-width:0;flex:1}.dshHelmSessionWorkspaceTitle{font-size:18px;line-height:25px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionTimes{margin-top:3px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;display:flex;gap:12px;white-space:nowrap;overflow:hidden}.dshHelmSessionIdWrap{min-width:0;max-width:310px;display:flex;align-items:center;gap:6px;font:11px/18px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dsw-alias-label-secondary)}.dshHelmSessionIdText{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionCopy{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;padding:2px 4px;border-radius:5px;cursor:pointer}.dshHelmSessionCopy:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshHelmSessionFacts{margin-top:8px;display:grid;grid-template-columns:90px minmax(0,1fr);grid-auto-rows:22px;align-items:center;column-gap:10px;font-size:12px}.dshHelmSessionFactLabel{color:var(--dsw-alias-label-secondary)}
-.dshHelmSessionContext{flex:none;max-height:300px;overflow:auto;padding:12px 20px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-menu)}.dshHelmSessionContextTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.dshHelmSessionContextTitle{font-size:12px;font-weight:650}.dshHelmSessionContextChats{min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.dshHelmSessionContextChatsLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextChat{max-width:220px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);padding:3px 7px;font:11px/17px inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.dshHelmContextChat:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmContextCard{padding:10px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;margin-bottom:8px}.dshHelmContextCard:last-child{margin-bottom:0}.dshHelmContextHead{display:flex;align-items:center;gap:10px}.dshHelmContextRole{font-size:11px;font-weight:650;color:var(--dsw-alias-label-secondary)}.dshHelmContextMessage{min-width:0;flex:1;font-size:13px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmContextMeta{margin-top:5px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary);min-width:0}.dshHelmContextTask{margin-top:7px}.dshHelmContextTask summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextTaskText{margin-top:6px;padding:8px 10px;border-radius:7px;background:var(--dsw-alias-interactive-bg-hover);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:18px}.dshHelmTimelineFilters{height:48px;flex:none;padding:0 20px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:6px}.dshHelmTimelineFilter{border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);padding:5px 9px;font:12px/18px inherit;cursor:pointer}.dshHelmTimelineFilter:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmTimelineFilter[data-active=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);font-weight:600}
+.dshHelmSessionContext{flex:none;max-height:300px;overflow:auto;padding:10px 20px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-menu)}.dshHelmSessionContextTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}.dshHelmSessionContext[data-expanded=true] .dshHelmSessionContextTitleRow{margin-bottom:10px}.dshHelmSessionContextToggle{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:inherit;padding:2px 0;font:inherit;cursor:pointer}.dshHelmSessionContextToggle:hover .dshHelmSessionContextTitle{color:var(--dsw-alias-label-primary)}.dshHelmSessionContextChevron{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionContextTitle{font-size:12px;font-weight:650}.dshHelmSessionContextChats{min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.dshHelmSessionContextChatsLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextChat{max-width:220px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);padding:3px 7px;font:11px/17px inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.dshHelmContextChat:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmContextCard{padding:10px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;margin-bottom:8px}.dshHelmContextCard:last-child{margin-bottom:0}.dshHelmContextHead{display:flex;align-items:center;gap:10px}.dshHelmContextRole{font-size:11px;font-weight:650;color:var(--dsw-alias-label-secondary)}.dshHelmContextMessage{min-width:0;flex:1;font-size:13px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmContextMeta{margin-top:5px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary);min-width:0}.dshHelmContextTask{margin-top:7px}.dshHelmContextTask summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextTaskText{margin-top:6px;padding:8px 10px;border-radius:7px;background:var(--dsw-alias-interactive-bg-hover);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:18px}.dshHelmTimelineFilters{height:48px;flex:none;padding:0 20px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:6px}.dshHelmTimelineFilter{border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);padding:5px 9px;font:12px/18px inherit;cursor:pointer}.dshHelmTimelineFilter:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmTimelineFilter[data-active=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);font-weight:600}
 .dshHelmTimeline{min-height:0;flex:1;overflow:auto;padding:6px 20px 22px}.dshHelmTimelineItem{display:grid;grid-template-columns:74px 76px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmTimelineTime{font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}.dshHelmTimelineActor{font-size:11px;line-height:18px}.dshHelmTimelineActorBadge{display:inline-flex;max-width:72px;padding:2px 6px;border-radius:999px;background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmTimelineContent{min-width:0}.dshHelmTimelineTitle{font-size:13px;font-weight:610;line-height:19px}.dshHelmTimelinePrimary{margin-top:2px;font-size:13px;line-height:19px;overflow-wrap:anywhere}.dshHelmTimelineSecondary{margin-top:3px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:17px;display:flex;gap:7px;flex-wrap:wrap}.dshHelmTimelineText{margin-top:7px;max-width:720px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-specific-menu);font:11px/17px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.dshHelmTimelineToggle{margin-top:6px;border:0;background:transparent;color:var(--dsw-alias-label-secondary);padding:0;font:11px/16px inherit;cursor:pointer}.dshHelmTimelineToggle:hover{color:var(--dsw-alias-label-primary)}.dshHelmTimelineEmpty{padding:56px 20px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}.dshHelmSessionError{margin:12px 20px 0;padding:8px 10px;border:1px solid var(--dsw-alias-state-error-primary);border-radius:8px;color:var(--dsw-alias-state-error-primary);font-size:12px}
 @media(max-width:820px){.dshHelmSessionPanel{width:calc(100vw - 28px);height:calc(100vh - 28px)}.dshHelmSessionNav{width:224px}.dshHelmTimelineItem{grid-template-columns:58px 64px minmax(0,1fr)}.dshHelmSessionFacts{grid-template-columns:72px minmax(0,1fr)}.dshHelmSessionContextTitleRow{align-items:flex-start;flex-direction:column}.dshHelmSessionContextChats{justify-content:flex-start}}
 `
@@ -163,6 +163,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [timeline, setTimeline] = useState<ChatSessionTimelineItem[]>([])
   const [filter, setFilter] = useState<'all' | 'chatgpt' | 'subagent'>('all')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  const [contextExpanded, setContextExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -212,6 +213,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   useEffect(() => {
     const generation = ++detailGeneration.current
     setExpanded(new Set())
+    setContextExpanded(false)
     setCopied(false)
     setRefreshing(false)
     if (!selectedId) {
@@ -339,39 +341,44 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                     <div className="dshHelmSessionFactLabel">{labels.workspace}</div><div>{selectedDetail?.workspaceLabel ?? labels.unassignedWorkspace}</div>
                   </div>
                 </section>
-                <section className="dshHelmSessionContext" aria-label={labels.workContext}>
+                <section className="dshHelmSessionContext" data-expanded={contextExpanded} aria-label={labels.workContext}>
                   <div className="dshHelmSessionContextTitleRow">
-                    <div className="dshHelmSessionContextTitle">{labels.workContext}</div>
-                    {chatUrls.length ? <div className="dshHelmSessionContextChats">
+                    <button type="button" className="dshHelmSessionContextToggle" aria-expanded={contextExpanded} onClick={() => setContextExpanded((value) => !value)}>
+                      <span className="dshHelmSessionContextTitle">{labels.workContext}</span>
+                      <span className="dshHelmSessionContextChevron" aria-hidden="true">{contextExpanded ? '▾' : '▸'}</span>
+                    </button>
+                    {contextExpanded && chatUrls.length ? <div className="dshHelmSessionContextChats">
                       <span className="dshHelmSessionContextChatsLabel">{labels.chatSessions}</span>
                       {chatUrls.map((url, index) => <button type="button" key={url} className="dshHelmContextChat" title={url} onClick={() => adapter.openUrl(url)}>{labels.openChat}{chatUrls.length > 1 ? ` ${index + 1}` : ''} ↗</button>)}
                     </div> : null}
                   </div>
-                  {sortedBoundIntents.map((entry, index) => (
-                    <article className="dshHelmContextCard" key={`${entry.boundAt}:${index}`}>
+                  {contextExpanded ? <>
+                    {sortedBoundIntents.map((entry, index) => (
+                      <article className="dshHelmContextCard" key={`${entry.boundAt}:${index}`}>
+                        <div className="dshHelmContextHead">
+                          <span className="dshHelmContextRole">{labels.boundChats} {sortedBoundIntents.length - index}</span>
+                          <span className="dshHelmContextMessage">{entry.intent.message}</span>
+                        </div>
+                        <div className="dshHelmContextMeta">
+                          <span>{labels.boundAt} · {timeLabel(entry.boundAt)}</span>
+                        </div>
+                        <details className="dshHelmContextTask">
+                          <summary>{labels.task}</summary>
+                          <div className="dshHelmContextTaskText">{entry.intent.task}</div>
+                        </details>
+                      </article>
+                    ))}
+                    <article className="dshHelmContextCard">
                       <div className="dshHelmContextHead">
-                        <span className="dshHelmContextRole">{labels.boundChats} {sortedBoundIntents.length - index}</span>
-                        <span className="dshHelmContextMessage">{entry.intent.message}</span>
-                      </div>
-                      <div className="dshHelmContextMeta">
-                        <span>{labels.boundAt} · {timeLabel(entry.boundAt)}</span>
+                        <span className="dshHelmContextRole">{labels.originChat}</span>
+                        <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
                       </div>
                       <details className="dshHelmContextTask">
                         <summary>{labels.task}</summary>
-                        <div className="dshHelmContextTaskText">{entry.intent.task}</div>
+                        <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
                       </details>
                     </article>
-                  ))}
-                  <article className="dshHelmContextCard">
-                    <div className="dshHelmContextHead">
-                      <span className="dshHelmContextRole">{labels.originChat}</span>
-                      <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
-                    </div>
-                    <details className="dshHelmContextTask">
-                      <summary>{labels.task}</summary>
-                      <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
-                    </details>
-                  </article>
+                  </> : null}
                 </section>
                 <nav className="dshHelmTimelineFilters" aria-label={labels.panelTitle}>
                   <button type="button" className="dshHelmTimelineFilter" data-active={filter === 'all'} onClick={() => setFilter('all')}>{labels.all}</button>
