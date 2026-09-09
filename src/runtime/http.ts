@@ -64,13 +64,18 @@ export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: 
         }))
         return
       }
+      if (body.target === 'externalAgentLsp') {
+        if (typeof body.enabled !== 'boolean') throw new Error('enabled must be a boolean')
+        json(res, 200, await runtime.setExternalAgentLspEnabled(body.enabled))
+        return
+      }
       if (body.target === 'externalUserAccess') {
         if (body.capability !== 'enabled' && body.capability !== 'mutations' && body.capability !== 'delegation') throw new Error('capability must be enabled, mutations, or delegation')
         if (typeof body.enabled !== 'boolean') throw new Error('enabled must be a boolean')
         json(res, 200, await runtime.setExternalUserAccess({ [body.capability]: body.enabled }))
         return
       }
-      if (body.target !== 'core' && body.target !== 'localMcp') throw new Error('target must be core or localMcp')
+      if (body.target !== 'core' && body.target !== 'localMcp') throw new Error('target must be core, localMcp, or externalAgentLsp')
       if (typeof body.enabled !== 'boolean') throw new Error('enabled must be a boolean')
       json(res, 200, body.target === 'core' ? await runtime.setCoreEnabled(body.enabled) : await runtime.setLocalMcpEnabled(body.enabled))
     } catch (error) {

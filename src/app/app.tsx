@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { deriveHelmConnectionHealth, tunnelOnboardingSource, tunnelSetupCanSubmit, type TunnelSetupValues } from '@beforewave/agent-helm-ui-contract'
 import { helmUiDictionaries, type HelmLocaleKey, type HelmTranslate } from './locale.js'
 import { deriveHelmCapabilitySummary, getHelmCapabilityDefinition, shouldCompactHelmCapabilitySummary } from './presentation.js'
@@ -34,8 +34,9 @@ const css = `
 .dshHelmTriggerIssue{width:16px;height:16px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-error-primary)}
 .dshHelmPanel{z-index:30;box-sizing:border-box;width:100%;max-width:calc(100vw - 24px);padding:4px;border:1px solid var(--dsw-alias-border-inverted);border-radius:12px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;position:fixed;overflow:visible}
 .dshHelmBody{display:flex;flex-direction:column;gap:0}
-.dshHelmRow{box-sizing:border-box;min-height:50px;width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 11px;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.dshHelmRow:last-child{border-bottom:0}
+.dshHelmRow{box-sizing:border-box;min-height:50px;width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 11px;position:relative;border-bottom:0}
+.dshHelmRow::after{content:"";position:absolute;left:11px;right:8px;bottom:0;border-bottom:1px solid var(--dsw-alias-border-l2);pointer-events:none}
+.dshHelmRow:last-child::after{display:none}
 .dshHelmNameArea{min-width:0;flex:1;display:flex;align-items:center;gap:6px;overflow:hidden}
 .dshHelmCapsInline{position:relative;min-width:0;flex:1;display:inline-flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:20px;font-weight:500;white-space:nowrap;overflow:hidden}
 .dshHelmCapsItem{display:inline-flex;align-items:center;gap:3px;flex:none}
@@ -55,10 +56,10 @@ const css = `
 .dshHelmIssueTarget:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dshHelmTunnelControl{display:inline-flex;align-items:center;gap:8px;flex:none}
 .dshHelmTunnelConfig{box-sizing:border-box;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
-.dshHelmTunnelConfig:hover,.dshHelmTunnelConfig[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.dshHelmTunnelConfig:hover,.dshHelmTunnelConfig[aria-expanded=true],.dshHelmRow:hover .dshHelmTunnelConfig{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshHelmTunnelConfig:focus{outline:none}
 .dshHelmTunnelConfig:focus-visible{outline:1px solid var(--dsw-alias-border-l4);outline-offset:1px}
-.dshHelmTunnelInlineState{width:10px;height:10px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.dshHelmInlineState{width:10px;height:10px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .dshHelmTunnelDialogStatus{display:inline-flex;align-items:center;gap:7px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px}
 .dshHelmTunnelHeaderTitle{min-width:0;flex:1;display:flex;align-items:center;gap:7px}
 .dshHelmTunnelScrim{padding:14px}
@@ -81,13 +82,16 @@ const css = `
 @media(max-width:900px){.dshHelmTunnelDialogBody{padding:12px}.dshHelmTunnelDialogContent{grid-template-columns:1fr}.dshHelmTunnelDialogErrors{grid-column:1}.dshHelmTunnelDialogAside{gap:12px}}
 .dshHelmTunnelInstall{margin-top:4px;padding:12px;border-radius:9px;background:var(--dsw-alias-interactive-bg-hover);display:flex;flex-direction:column;gap:6px}
 .dshHelmDetails{box-sizing:border-box;padding:10px 11px 11px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
-.dshHelmGroupBody{box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.dshHelmGroupBody{box-sizing:border-box;position:relative;border-bottom:0}
+.dshHelmGroupBody::after{content:"";position:absolute;left:26px;right:8px;bottom:0;border-bottom:1px solid var(--dsw-alias-border-l2);pointer-events:none}
 .dshHelmGroupBody>.dshHelmRow{padding-left:26px}
-.dshHelmSubRow{box-sizing:border-box;min-height:42px;width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 26px;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.dshHelmSubRow:last-child{border-bottom:0}
+.dshHelmGroupBody>.dshHelmRow::after{left:26px}
+.dshHelmSubRow{box-sizing:border-box;min-height:42px;width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 26px;position:relative;border-bottom:0}
+.dshHelmSubRow::after{content:"";position:absolute;left:26px;right:8px;bottom:0;border-bottom:1px solid var(--dsw-alias-border-l2);pointer-events:none}
+.dshHelmSubRow:last-child::after{display:none}
 .dshHelmSubName{min-width:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
 .dshHelmSubIcon{display:inline-flex;width:20px;justify-content:flex-start;align-items:center;margin-right:2px}
-.dshHelmSessionEntry{cursor:pointer;background:transparent;color:inherit;text-align:left;font:inherit;border-left:0;border-right:0;border-top:0}.dshHelmSessionEntry:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmSessionEntryTitle{min-width:0;flex:1;font-size:14px;line-height:22px}.dshHelmSessionEntryArrow{flex:none;color:var(--dsw-alias-label-tertiary);display:inline-flex;align-items:center;justify-content:center}
+.dshHelmSessionEntry{cursor:pointer;background:transparent;color:inherit;text-align:left;font:inherit;border-left:0;border-right:0;border-top:0}.dshHelmSessionEntry:hover{background:transparent}.dshHelmSessionEntryTitle{min-width:0;flex:1;font-size:14px;line-height:22px}.dshHelmSessionEntryArrow{box-sizing:border-box;width:28px;height:28px;flex:none;border-radius:50%;color:var(--dsw-alias-label-tertiary);display:inline-flex;align-items:center;justify-content:center}.dshHelmSessionEntry:hover .dshHelmSessionEntryArrow{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshHelmCapabilityRow{cursor:pointer;border:0;background:transparent;color:inherit;text-align:left;font:inherit}
 .dshHelmCapabilityRow:hover{background:transparent}
 .dshHelmCapabilityRow:focus{outline:none}
@@ -183,7 +187,7 @@ export interface ChatGPTHelmAppProps {
 export type HelmPanelProps = ChatGPTHelmAppProps
 
 type HelmIssue = { title: string; detail?: string }
-type HelmUpdateTarget = 'core' | 'localMcp' | 'externalAccess' | 'tunnelSetup'
+type HelmUpdateTarget = 'core' | 'localMcp' | 'externalAgentLsp' | 'externalAccess' | 'tunnelSetup'
 type HelmCapabilitySummaryItem = { icon: string; label: string }
 
 function requestErrorDetail(cause: unknown, t: HelmTranslate): string {
@@ -235,15 +239,6 @@ function TunnelInfo({ label }: { label: string }): JSX.Element {
     <Tooltip label={label} side="top" delayMs={0} maxWidth={320}>
       <button type="button" className="dshHelmTunnelInfoButton" aria-label={label}>i</button>
     </Tooltip>
-  )
-}
-
-function TunnelConfigIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none">
-      <path d="M6.75 1.75h2.5l.38 1.53c.3.12.58.28.84.48l1.49-.46 1.25 2.16-1.12 1.07c.04.31.04.63 0 .94l1.12 1.07-1.25 2.16-1.49-.46c-.26.2-.54.36-.84.48l-.38 1.53h-2.5l-.38-1.53a4.3 4.3 0 0 1-.84-.48l-1.49.46-1.25-2.16 1.12-1.07a3.8 3.8 0 0 1 0-.94L2.79 5.46 4.04 3.3l1.49.46c.26-.2.54-.36.84-.48l.38-1.53Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-      <circle cx="8" cy="7" r="1.75" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
   )
 }
 
@@ -418,13 +413,13 @@ function CapabilitySummary({ items }: { items: HelmCapabilitySummaryItem[] }): J
 
 function StatusRow({ name, nameExtra, description, management = false, toggleOnName = true, state, onNameClick, onToggle, onIssueClick, wholeRow = false, expanded = false, details, detailsId, detailsClassName, control, issue, t }: { name: string; nameExtra?: JSX.Element; description?: string | undefined; management?: boolean; toggleOnName?: boolean; state: HelmUiRuntimeState; onNameClick?: (() => void) | undefined; onToggle?: (() => void) | undefined; onIssueClick?: (() => void) | undefined; wholeRow?: boolean; expanded?: boolean; details?: JSX.Element | undefined; detailsId?: string | undefined; detailsClassName?: string; control?: JSX.Element; issue?: HelmIssue | undefined; t: HelmTranslate }): JSX.Element {
   const expandable = Boolean(onToggle && details)
+  const rowInteractive = Boolean(wholeRow && onToggle)
   const nameClick = onNameClick ?? (toggleOnName && expandable ? onToggle : undefined)
-  const rowProps = wholeRow && expandable
+  const rowProps = rowInteractive
     ? {
         role: 'button' as const,
         tabIndex: 0,
-        'aria-expanded': expanded,
-        'aria-controls': detailsId,
+        ...(expandable ? { 'aria-expanded': expanded, 'aria-controls': detailsId } : {}),
         onClick: onToggle,
         onKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -434,18 +429,24 @@ function StatusRow({ name, nameExtra, description, management = false, toggleOnN
         },
       }
     : {}
+  const onNameButtonClick = nameClick
+    ? (event: ReactMouseEvent<HTMLButtonElement>) => {
+        if (rowInteractive) event.stopPropagation()
+        nameClick()
+      }
+    : undefined
   return (
     <>
-      <div className={`dshHelmRow${wholeRow && expandable ? ' dshHelmCapabilityRow' : ''}`} {...rowProps}>
+      <div className={`dshHelmRow${rowInteractive ? ' dshHelmCapabilityRow' : ''}`} {...rowProps}>
         <span className="dshHelmNameArea">
         {description ? (
           <Tooltip label={description} side="top" delayMs={0} maxWidth={260}>
             <span className="dshHelmTooltipTarget" tabIndex={0}>
-              {nameClick ? <Button variant="ghost" size="sm" className="dshHelmNameButton" data-management={management || undefined} aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={nameClick}>{name}</Button> : <span className="dshHelmName">{name}</span>}
+              {nameClick ? <Button variant="ghost" size="sm" className="dshHelmNameButton" data-management={management || undefined} aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button> : <span className="dshHelmName">{name}</span>}
             </span>
           </Tooltip>
         ) : nameClick ? (
-          <Button variant="ghost" size="sm" className="dshHelmNameButton" aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={nameClick}>{name}</Button>
+          <Button variant="ghost" size="sm" className="dshHelmNameButton" aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button>
         ) : (
           <span className="dshHelmName">{name}</span>
         )}
@@ -489,7 +490,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [pendingInstall, setPendingInstall] = useState<HelmUiDependencyName>()
   const [confirmCoreOff, setConfirmCoreOff] = useState(false)
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false)
-  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'localMcp' | undefined>()
+  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'codeSense' | undefined>()
   const [tunnelPanelOpen, setTunnelPanelOpen] = useState(false)
   const [tunnelId, setTunnelId] = useState('')
   const [organizationId, setOrganizationId] = useState('')
@@ -602,6 +603,18 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
+  const setExternalAgentLspEnabled = async (enabled: boolean) => {
+    setPendingTarget('externalAgentLsp')
+    try {
+      setStatus(await adapter.setExternalAgentLspEnabled(enabled))
+      setError(undefined)
+    } catch (cause) {
+      setError({ target: 'externalAgentLsp', detail: requestErrorDetail(cause, t) })
+    } finally {
+      setPendingTarget(undefined)
+    }
+  }
+
   const setExternalUserAccess = async (capability: HelmExternalCapability, enabled: boolean) => {
     setPendingTarget('externalAccess')
     try {
@@ -645,7 +658,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
-  const toggleRow = (row: 'capabilities' | 'localMcp') => {
+  const toggleRow = (row: 'capabilities' | 'codeSense') => {
     setExpandedRow((current) => current === row ? undefined : row)
   }
   const tunnelManagementUrl = status?.tunnel.state === 'running' ? status.tunnel.adminUrl : undefined
@@ -660,6 +673,13 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     : undefined
   const effectivePolicy = status?.effectiveExternalAccess ?? { enabled: false, mutations: false, delegation: false }
   const configuredPolicy = status?.externalUserAccess ?? { enabled: false, mutations: false, delegation: false }
+  const codeSenseState: HelmUiRuntimeState = !status
+    ? 'unavailable'
+    : status.dependencies.serena.state === 'unavailable'
+      ? 'unavailable'
+      : status.dependencies.serena.state === 'ready' || status.dependencies.serena.state === 'running'
+        ? 'running'
+        : 'stopped'
   const needsAttention = statusNeedsAttention(status, Boolean(error))
   const capabilityDefinitions = {
     understand: getHelmCapabilityDefinition('understand'),
@@ -734,50 +754,62 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                   control={<ExpandChevron expanded={expandedRow === 'capabilities'} />}
 
                 />
-                <button type="button" className="dshHelmRow dshHelmSessionEntry" onClick={() => { setOpen(false); setSessionPanelOpen(true) }}>
-                  <span className="dshHelmSessionEntryTitle">{t('sessionActivityEntry')}</span>
-                  <span className="dshHelmSessionEntryArrow" aria-hidden="true"><IconChevronRightOutline14 /></span>
-                </button>
                 <StatusRow
-                  name={t('localMcp')}
-                  description={t('localMcpDescription')}
-                  state={status.localMcp.state}
+                  name={t('codeSense')}
+                  nameExtra={<span className="dshHelmInlineState" role="img" aria-label={t(stateKey(codeSenseState))}><StateDot state={dotState(codeSenseState)} size={8} /></span>}
+                  description={t('codeSenseDescription')}
+                  state={codeSenseState}
                   t={t}
-                  onToggle={(() => {
-                    const hasIssue = error?.target === 'serena' || error?.target === 'localMcp' || status.dependencies.serena.state === 'unavailable' || status.localMcp.state === 'unavailable'
-                    return hasIssue ? () => toggleRow('localMcp') : undefined
-                  })()}
-                  expanded={expandedRow === 'localMcp'}
-                  detailsId="dshHelmLocalMcpDetails"
+                  wholeRow
+                  toggleOnName={false}
+                  onToggle={() => toggleRow('codeSense')}
+                  expanded={expandedRow === 'codeSense'}
+                  detailsId="dshHelmCodeSenseDetails"
+                  detailsClassName="dshHelmGroupBody"
                   details={(
                     <>
-                      {error?.target === 'serena' || error?.target === 'localMcp' ? <p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p> : null}
-                      {status.dependencies.serena.state === 'unavailable' ? (
-                        <>
-                          <p className="dshHelmDetailsText" data-error="true">{status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription')}</p>
-                          {status.dependencies.serena.installCommand ? <InstallCommand command={status.dependencies.serena.installCommand} /> : null}
-                          <div className="dshHelmActions">
-                            {status.dependencies.serena.installCommand ? (
-                              <Button variant="primary" size="sm" disabled={pendingInstall !== undefined} onClick={() => { void installDependency('serena') }}>{pendingInstall === 'serena' ? t('installing') : t('install')}</Button>
-                            ) : null}
-                            {status.dependencies.serena.installUrl ? <Button variant={status.dependencies.serena.installCommand ? 'outline' : 'primary'} size="sm" onClick={() => openUrl(status.dependencies.serena.installUrl)}>{status.dependencies.serena.installCommand ? t('manualSetup') : t('goInstall')}</Button> : null}
-                          </div>
-                        </>
+                      <div className="dshHelmSubRow">
+                        <span className="dshHelmSubName">{t('externalAgentLsp')}</span>
+                        <StatusSwitch
+                          enabled={status.externalAgentLsp.enabled}
+                          disabled={status.core.state !== 'running' || !status.externalAgentLsp.configurable || pendingTarget !== undefined}
+                          label={t('toggleExternalAgentLsp')}
+                          onChange={(enabled) => { void setExternalAgentLspEnabled(enabled) }}
+                        />
+                      </div>
+                      <div className="dshHelmSubRow">
+                        <span className="dshHelmSubName">{t('localMcp')}</span>
+                        <StatusSwitch
+                          enabled={status.localMcp.state === 'running'}
+                          disabled={status.core.state !== 'running' || pendingTarget !== undefined}
+                          label={t('toggleLocalMcp')}
+                          onChange={(enabled) => { void setEnabled('localMcp', enabled) }}
+                        />
+                      </div>
+                      {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'externalAgentLsp' || status.dependencies.serena.state === 'unavailable' || status.localMcp.state === 'unavailable' || status.localMcp.message ? (
+                        <div className="dshHelmDetails">
+                          {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'externalAgentLsp' ? <p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p> : null}
+                          {status.dependencies.serena.state === 'unavailable' ? (
+                            <>
+                              <p className="dshHelmDetailsText" data-error="true">{status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription')}</p>
+                              {status.dependencies.serena.installCommand ? <InstallCommand command={status.dependencies.serena.installCommand} /> : null}
+                              <div className="dshHelmActions">
+                                {status.dependencies.serena.installCommand ? (
+                                  <Button variant="primary" size="sm" disabled={pendingInstall !== undefined} onClick={() => { void installDependency('serena') }}>{pendingInstall === 'serena' ? t('installing') : t('install')}</Button>
+                                ) : null}
+                                {status.dependencies.serena.installUrl ? <Button variant={status.dependencies.serena.installCommand ? 'outline' : 'primary'} size="sm" onClick={() => openUrl(status.dependencies.serena.installUrl)}>{status.dependencies.serena.installCommand ? t('manualSetup') : t('goInstall')}</Button> : null}
+                              </div>
+                            </>
+                          ) : null}
+                          {status.dependencies.serena.state !== 'unavailable' && (status.localMcp.state === 'unavailable' || status.localMcp.message) ? <p className="dshHelmDetailsText" data-error="true">{status.localMcp.message ?? t('localMcpIssueDetails')}</p> : null}
+                        </div>
                       ) : null}
-                      {status.dependencies.serena.state !== 'unavailable' && (status.localMcp.state === 'unavailable' || status.localMcp.message) ? <p className="dshHelmDetailsText" data-error="true">{status.localMcp.message ?? t('localMcpIssueDetails')}</p> : null}
                     </>
                   )}
-                  control={(
-                    <StatusSwitch
-                      enabled={status.localMcp.state === 'running'}
-                      disabled={status.core.state !== 'running' || pendingTarget !== undefined}
-                      label={t('toggleLocalMcp')}
-                      onChange={(enabled) => { void setEnabled('localMcp', enabled) }}
-                    />
-                  )}
+                  control={<ExpandChevron expanded={expandedRow === 'codeSense'} />}
                   issue={error?.target === 'serena'
                     ? { title: t('serenaDependencyIssue'), detail: error.detail }
-                    : error?.target === 'localMcp'
+                    : error?.target === 'externalAgentLsp' || error?.target === 'localMcp'
                       ? { title: t('settingUpdateIssue'), detail: error.detail }
                       : status.dependencies.serena.state === 'unavailable'
                         ? { title: t('serenaDependencyIssue'), detail: status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription') }
@@ -785,6 +817,33 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                           ? { title: t('localMcpIssue'), detail: t('localMcpIssueDetails') }
                           : undefined}
                 />
+                      <StatusRow
+                        name={t('tunnel')}
+                        nameExtra={<span className="dshHelmInlineState" role="img" aria-label={t(stateKey(status.tunnel.state))}><StateDot state={dotState(status.tunnel.state)} size={8} /></span>}
+                        description={tunnelManagementUrl ? t('tunnelManagementDescription') : undefined}
+                        management={Boolean(tunnelManagementUrl)}
+                        wholeRow
+                        toggleOnName={false}
+                        state={status.tunnel.state}
+                        t={t}
+                        onNameClick={tunnelManagementUrl ? () => openUrl(tunnelManagementUrl) : undefined}
+                        onToggle={openTunnelPanel}
+                        onIssueClick={openTunnelPanel}
+                        control={(
+                          <span className="dshHelmTunnelControl">
+                            <Tooltip label={t(tunnelOnboardingSource.title.key)} side="top" delayMs={0} maxWidth={220}>
+                              <button type="button" className="dshHelmTunnelConfig" aria-label={t(tunnelOnboardingSource.title.key)} aria-expanded={tunnelPanelOpen} aria-controls="dshHelmTunnelSetupDialog" onClick={(event) => { event.stopPropagation(); openTunnelPanel() }}>
+                                <IconChevronRightOutline14 />
+                              </button>
+                            </Tooltip>
+                          </span>
+                        )}
+                        issue={tunnelIssueInfo}
+                      />
+                <button type="button" className="dshHelmRow dshHelmSessionEntry" onClick={() => { setOpen(false); setSessionPanelOpen(true) }}>
+                  <span className="dshHelmSessionEntryTitle">{t('sessionActivityEntry')}</span>
+                  <span className="dshHelmSessionEntryArrow" aria-hidden="true"><IconChevronRightOutline14 /></span>
+                </button>
                 <div className="dshHelmCoreArea">
                   <StatusRow
                     name={t('core')}
@@ -818,28 +877,6 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                     </div>
                   ) : null}
                 </div>
-
-                      <StatusRow
-                        name={t('tunnel')}
-                        nameExtra={<span className="dshHelmTunnelInlineState" role="img" aria-label={t(stateKey(status.tunnel.state))}><StateDot state={dotState(status.tunnel.state)} size={8} /></span>}
-                        description={tunnelManagementUrl ? t('tunnelManagementDescription') : undefined}
-                        management={Boolean(tunnelManagementUrl)}
-                        toggleOnName={false}
-                        state={status.tunnel.state}
-                        t={t}
-                        onNameClick={tunnelManagementUrl ? () => openUrl(tunnelManagementUrl) : undefined}
-                        onIssueClick={openTunnelPanel}
-                        control={(
-                          <span className="dshHelmTunnelControl">
-                            <Tooltip label={t(tunnelOnboardingSource.title.key)} side="top" delayMs={0} maxWidth={220}>
-                              <button type="button" className="dshHelmTunnelConfig" aria-label={t(tunnelOnboardingSource.title.key)} aria-expanded={tunnelPanelOpen} aria-controls="dshHelmTunnelSetupDialog" onClick={(event) => { event.stopPropagation(); openTunnelPanel() }}>
-                                <TunnelConfigIcon />
-                              </button>
-                            </Tooltip>
-                          </span>
-                        )}
-                        issue={tunnelIssueInfo}
-                      />
               </>
             )}
           </div>

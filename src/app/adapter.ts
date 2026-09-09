@@ -10,6 +10,7 @@ export interface HelmStatusAdapter {
   configureTunnel(input: TunnelSetupValues): Promise<HelmUiStatus>
   setCoreEnabled(enabled: boolean): Promise<HelmUiStatus>
   setLocalMcpEnabled(enabled: boolean): Promise<HelmUiStatus>
+  setExternalAgentLspEnabled(enabled: boolean): Promise<HelmUiStatus>
   setExternalUserAccess(capability: HelmExternalCapability, enabled: boolean): Promise<HelmUiStatus>
   openUrl(url: string): void
 }
@@ -181,6 +182,12 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
       return await request<HelmUiStatus>(statusUrl, {
         method: 'POST',
         body: JSON.stringify({ target: 'localMcp', enabled }),
+      })
+    },
+    async setExternalAgentLspEnabled(enabled) {
+      return await request<HelmUiStatus>(statusUrl, {
+        method: 'POST',
+        body: JSON.stringify({ target: 'externalAgentLsp', enabled }),
       })
     },
     async setExternalUserAccess(capability, enabled) {

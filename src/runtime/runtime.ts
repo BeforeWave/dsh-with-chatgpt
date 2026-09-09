@@ -279,9 +279,14 @@ export class ChatGPTHelmRuntime {
         await this.#localMcp?.enable()
       } catch (error) {
         await this.rpc.setLocalMcpEnabled(false).catch(() => {})
-        throw new Error(`local MCP client could not connect: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(`Local Agents Code Sense service could not connect: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
+    return await this.getStatus()
+  }
+
+  async setExternalAgentLspEnabled(enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {
+    await this.rpc.setExternalAgentLspEnabled(enabled)
     return await this.getStatus()
   }
 

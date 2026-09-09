@@ -35,6 +35,11 @@ export interface HelmUiStatus {
     url?: string
     message?: string
   }
+  externalAgentLsp: {
+    state: HelmUiRuntimeState
+    enabled: boolean
+    configurable: boolean
+  }
   externalCapabilities: ExternalCapabilityPolicy
   externalUserAccess: ExternalUserAccess
   effectiveExternalAccess: ExternalUserAccess
@@ -157,7 +162,7 @@ function localMcpStatus(health: Record<string, unknown>, bridge?: LocalMcpRuntim
     return {
       state: 'unavailable',
       ...(url ? { url } : {}),
-      message: bridge.status.error ?? 'Local MCP client is not connected.',
+      message: bridge.status.error ?? 'Local Agents Code Sense service is not connected.',
     }
   }
   return {
@@ -183,6 +188,7 @@ export async function resolveHelmUiStatus(
       dependencies: unavailableDependencies,
       tunnel: { state: 'unavailable' },
       localMcp: { state: 'unavailable' },
+      externalAgentLsp: { state: 'unavailable', enabled: false, configurable: false },
       externalCapabilities: { ...DEFAULT_EXTERNAL_CAPABILITIES },
       externalUserAccess: { enabled: false, mutations: false, delegation: false },
       effectiveExternalAccess: { enabled: false, mutations: false, delegation: false },
@@ -198,6 +204,7 @@ export async function resolveHelmUiStatus(
       dependencies: unavailableDependencies,
       tunnel: { state: 'unavailable' },
       localMcp: { state: 'unavailable' },
+      externalAgentLsp: { state: 'unavailable', enabled: false, configurable: false },
       externalCapabilities: { ...DEFAULT_EXTERNAL_CAPABILITIES },
       externalUserAccess: { enabled: false, mutations: false, delegation: false },
       effectiveExternalAccess: { enabled: false, mutations: false, delegation: false },
@@ -209,6 +216,19 @@ export async function resolveHelmUiStatus(
   const tunnel = record(health.tunnel)
   if (tunnel.running === true && dependencies.tunnelClient.state !== 'disabled') dependencies.tunnelClient.state = 'running'
   const capabilities = externalCapabilities(health.externalCapabilities)
+  const externalAgentLspStateKnown = typeof health.externalAgentLspEnabled === 'boolean'
+  const externalAgentLspEnabled = externalAgentLspStateKnown ? health.externalAgentLspEnabled === true : true
+  const externalAgentLsp = {
+    state: health.status === 'disabled'
+      ? 'disabled' as const
+      : !capabilities.semantic || !externalAgentLspStateKnown
+        ? 'unavailable' as const
+        : externalAgentLspEnabled
+          ? 'running' as const
+          : 'disabled' as const,
+    enabled: externalAgentLspEnabled,
+    configurable: externalAgentLspStateKnown && capabilities.semantic,
+  }
   const userAccess = externalUserAccess(health.externalUserAccess)
   const effectiveAccess = effectiveUiAccess(capabilities, userAccess)
   const daemon = record(health.daemon)
@@ -219,6 +239,7 @@ export async function resolveHelmUiStatus(
     dependencies,
     tunnel: coreTunnelStatus(health),
     localMcp: localMcpStatus(health, bridge),
+    externalAgentLsp,
     externalCapabilities: capabilities,
     externalUserAccess: userAccess,
     effectiveExternalAccess: effectiveAccess,
