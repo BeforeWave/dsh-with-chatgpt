@@ -68,3 +68,28 @@ test('runtime status echoes the saved Tunnel proxy', async () => {
   assert.equal(status.tunnel.proxyConfigured, true)
   assert.equal(status.tunnel.proxyUrl, 'http://127.0.0.1:7890')
 })
+
+test('legacy Core health keeps ChatGPT Code Sense default-on while the new runtime toggle is unavailable', async () => {
+  const rpc = {
+    connected: true,
+    async supervisorHealth() {
+      return {
+        status: 'ok',
+        daemon: { lifecycleOwner: 'control:dsh' },
+        dependencies: {
+          serena: { configured: true, available: true, command: 'serena' },
+          tunnelClient: { configured: false, available: false, command: 'tunnel-client' },
+        },
+        serena: { connected: true },
+        tunnel: { running: false },
+        localMcp: { enabled: false },
+        externalCapabilities: { command: true, semantic: true, read_only: false, delegate: false },
+        externalUserAccess: { enabled: true, mutations: true, delegation: false },
+      }
+    },
+  }
+  const status = await resolveHelmUiStatus(rpc, undefined, 'control:dsh')
+  assert.equal(status.externalAgentLsp.enabled, true)
+  assert.equal(status.externalAgentLsp.configurable, false)
+  assert.equal(status.externalAgentLsp.state, 'unavailable')
+})
