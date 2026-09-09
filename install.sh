@@ -32,15 +32,20 @@ VERSION=$(release_tool resolve --release-url "$RELEASE_URL" --version "$VERSION"
   || fail "Could not resolve DSH with ChatGPT GitHub Release version."
 stage 2 "GitHub Release ${VERSION}"
 
+DSH_HOME_DIR=${DSH_HOME:-${HOME:?}/.dsh}
+ARTIFACT_DIR="$DSH_HOME_DIR/artifacts/dsh-with-chatgpt/$VERSION"
+mkdir -p "$ARTIFACT_DIR"
 ROOT=$(mktemp -d "${TMPDIR:-/tmp}/dsh-with-chatgpt-release.XXXXXX")
 trap 'rm -rf "$ROOT"' EXIT HUP INT TERM
-ARCHIVE=$ROOT/dsh-with-chatgpt.tgz
+DOWNLOAD=$ROOT/dsh-with-chatgpt.tgz
+ARCHIVE=$ARTIFACT_DIR/dsh-with-chatgpt.tgz
 release_tool download \
   --release-url "$RELEASE_URL" \
   --version "$VERSION" \
   --artifact-id dsh-with-chatgpt-package \
-  --output "$ARCHIVE" >/dev/null \
+  --output "$DOWNLOAD" >/dev/null \
   || fail "Could not download DSH with ChatGPT GitHub Release v$VERSION."
+mv -f "$DOWNLOAD" "$ARCHIVE"
 
 dsh plugin --profile "$PROFILE" add "$ARCHIVE"
 trap - EXIT HUP INT TERM

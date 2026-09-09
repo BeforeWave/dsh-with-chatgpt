@@ -27,11 +27,16 @@ $ReleaseTool = [scriptblock]::Create($source)
 $Version = (& $ReleaseTool resolve -ReleaseUrl $ReleaseUrl -Version $Version | Select-Object -Last 1).Trim()
 Stage 2 "GitHub Release $Version"
 
+$dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $HOME '.dsh' }
+$artifactDir = Join-Path (Join-Path (Join-Path $dshHome 'artifacts') 'dsh-with-chatgpt') $Version
+New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+$archive = Join-Path $artifactDir 'dsh-with-chatgpt.tgz'
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) ("dsh-with-chatgpt-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $temp -Force | Out-Null
 try {
-  $archive = Join-Path $temp 'dsh-with-chatgpt.tgz'
-  & $ReleaseTool download -ReleaseUrl $ReleaseUrl -Version $Version -ArtifactId 'dsh-with-chatgpt-package' -Output $archive
+  $download = Join-Path $temp 'dsh-with-chatgpt.tgz'
+  & $ReleaseTool download -ReleaseUrl $ReleaseUrl -Version $Version -ArtifactId 'dsh-with-chatgpt-package' -Output $download
+  Move-Item -LiteralPath $download -Destination $archive -Force
   & $dsh.Source plugin --profile $Profile add $archive
   if ($LASTEXITCODE -ne 0) { Fail "dsh plugin add failed for GitHub Release $Version" }
 } finally {
