@@ -24,7 +24,7 @@
   </sub>
 </p>
 <p align="center">
-  <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+  <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/0446ad68-559a-43e0-b663-9f2a00699522" />
 </p>
 
 ---
@@ -93,7 +93,7 @@ dsh web
 On first run, DSH with ChatGPT checks the current environment and uses the **Setup Guide** to walk you through the required installation, ChatGPT Tunnel, and permission setup.
 
 <p align="center">
-  <img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+  <img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/d1d3c4d2-4e90-44e6-b3a6-232b69130f49" />
 </p>
 
 Once setup is complete, return to `chatgpt.com` and start working directly with your local project.
@@ -165,7 +165,7 @@ DSH with ChatGPT adds a lightweight entry inside DSH for viewing the local work 
 * Associated DSH Session
 
 <p align="center">
-  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
+  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/4340094b-7198-42f1-a3d6-b500a42bdf1f"
 </p>
 
 This entry is used to view and manage ChatGPT's local work without changing how native DSH Sessions work.
