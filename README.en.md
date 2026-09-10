@@ -165,7 +165,7 @@ DSH with ChatGPT adds a lightweight entry inside DSH for viewing the local work 
 * Associated DSH Session
 
 <p align="center">
-  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/4340094b-7198-42f1-a3d6-b500a42bdf1f"
+  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/4340094b-7198-42f1-a3d6-b500a42bdf1f"  />
 </p>
 
 This entry is used to view and manage ChatGPT's local work without changing how native DSH Sessions work.
