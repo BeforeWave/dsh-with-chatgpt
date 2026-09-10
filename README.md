@@ -24,7 +24,7 @@
 </sub>
 </p>
 <p align="center">
-  <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/48103763-2897-4df3-94a9-af36df672448" />
+  <img width="1000" alt="DSH with ChatGPT" src="https://github.com/user-attachments/assets/0446ad68-559a-43e0-b663-9f2a00699522" />
 </p>
 
 ---
@@ -93,7 +93,7 @@ dsh web
 首次运行时，DSH with ChatGPT 会检查当前环境，并通过 **Setup Guide** 引导完成所需安装、ChatGPT Tunnel 和权限配置。
 
 <p align="center">
-  <img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/a15c4cfe-c27a-4450-8ba3-5f03e2c3ea6d" />
+  <img width="900" alt="DSH with ChatGPT Setup Guide" src="https://github.com/user-attachments/assets/d1d3c4d2-4e90-44e6-b3a6-232b69130f49" />
 </p>
 
 配置完成后，回到 `chatgpt.com` 就可以直接基于本地项目开始工作。
@@ -165,7 +165,8 @@ DSH with ChatGPT 会在 DSH 中增加一个轻量入口，用来查看 ChatGPT �
 * 关联的 DSH Session
 
 <p align="center">
-  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/44db8e14-202e-4fca-bdfb-bf6ef4c5dbc1" />
+  <img width="700" alt="DSH with ChatGPT Work" src="https://github.com/user-attachments/assets/4340094b-7198-42f1-a3d6-b500a42bdf1f" />
+
 </p>
 
 这个入口用于查看和管理 ChatGPT 的本地工作，不改变原生 DSH Session 的使用方式。
