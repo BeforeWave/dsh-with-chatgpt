@@ -9,6 +9,7 @@ import {
   type ChatSessionSummary,
   type ChatSessionSummaryPage,
   type ChatSessionTimelineItem,
+  type ChatSessionTimelineUpdateBatch,
   type CoreConfigOverride,
   type DelegatedSession,
   type ExternalUserAccess,
@@ -24,6 +25,7 @@ import {
   type HelmUiDependencyName,
   type HelmUiStatus,
 } from './status.js'
+import { SessionTimelineSubscriptionHub, type SessionTimelineSubscriber } from './session-timeline-stream.js'
 
 function defaultCoreDaemonSocket(): string { return process.env.AGENT_HELM_DAEMON_SOCKET?.trim() || defaultDaemonEndpoint(homedir()) }
 
@@ -48,7 +50,14 @@ export class ChatGPTHelmRuntime {
   #coreSocket: string | undefined
   #tunnelClientReady = false
   #startupError: string | undefined
-  constructor(readonly options: ChatGPTHelmRuntimeOptions) {}
+  readonly #timelineSubscriptions: SessionTimelineSubscriptionHub
+
+  constructor(readonly options: ChatGPTHelmRuntimeOptions) {
+    this.#timelineSubscriptions = new SessionTimelineSubscriptionHub(
+      async (sessionId, afterSequence) => await this.rpc.getChatSessionTimelineUpdates(sessionId, afterSequence),
+      async (sessionId) => await this.rpc.releaseChatSessionTimelineTail(sessionId),
+    )
+  }
 
   get running(): boolean { return this.#started }
   get rpc(): AdapterRpcClient {
@@ -167,6 +176,7 @@ export class ChatGPTHelmRuntime {
   }
 
   async stop(): Promise<void> {
+    this.#timelineSubscriptions.dispose()
     if (!this.#rpc && !this.#managed && !this.#started) return
     this.#started = false
     this.#tunnelClientReady = false
@@ -307,6 +317,12 @@ export class ChatGPTHelmRuntime {
     return session ? normalizeWorkHistorySession(session) as unknown as ChatSessionSummary : undefined
   }
   async getSessionTimeline(id: string): Promise<ChatSessionTimelineItem[]> { return await this.rpc.getChatSessionTimeline(id) }
+  async getSessionTimelineUpdates(id: string, afterSequence: number): Promise<ChatSessionTimelineUpdateBatch> {
+    return await this.rpc.getChatSessionTimelineUpdates(id, afterSequence)
+  }
+  subscribeSessionTimeline(id: string, afterSequence: number, subscriber: SessionTimelineSubscriber): () => void {
+    return this.#timelineSubscriptions.subscribe(id, afterSequence, subscriber)
+  }
   async getSessionActivity(id: string): Promise<ChatSessionActivity[]> { return await this.rpc.getChatSessionActivity(id) }
   async getSessionDelegations(id: string): Promise<DelegatedSession[]> { return await this.rpc.getChatSessionDelegations(id) }
 }

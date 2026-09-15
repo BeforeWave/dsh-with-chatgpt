@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChatSessionTimelineItem } from '@beforewave/agent-helm'
 import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationDetail, type WorkHistoryPresentationLabel, type WorkHistoryPresentationTitle, type WorkHistorySession } from '@beforewave/agent-helm-ui-contract'
-import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, filterWorkHistoryTimeline } from '../work-history.js'
+import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, filterWorkHistoryTimeline, mergeWorkHistoryTimeline } from '../work-history.js'
 import type { HelmSessionAdapter } from '../adapter.js'
 
 const CSS_ID = '@beforewave/dsh-with-chatgpt/session-activity'
@@ -163,7 +163,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [timeline, setTimeline] = useState<ChatSessionTimelineItem[]>([])
   const [filter, setFilter] = useState<'all' | 'chatgpt' | 'subagent'>('all')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
-  const [contextExpanded, setContextExpanded] = useState(false)
+  const [contextExpanded, setContextExpanded] = useState(true)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -172,6 +172,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [error, setError] = useState<string>()
   const detailCache = useRef(new Map<string, SessionDetailCacheEntry>())
   const detailGeneration = useRef(0)
+  const refreshGeneration = useRef(0)
   const sessionList = useMemo(() => createWorkHistorySessionListModel({
     sessions,
     workspaceId: workspaceFilter,
@@ -212,24 +213,52 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
 
   useEffect(() => {
     const generation = ++detailGeneration.current
+    refreshGeneration.current += 1
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
     setExpanded(new Set())
-    setContextExpanded(false)
+    setContextExpanded(true)
     setCopied(false)
     setRefreshing(false)
     if (!selectedId) {
       setTimeline([])
       setLoading(false)
-      return
+      return () => { cancelled = true }
     }
+
+    const startLive = () => {
+      if (cancelled || generation !== detailGeneration.current) return
+      try {
+        const currentTimeline = detailCache.current.get(selectedId)?.timeline ?? []
+        const afterSequence = currentTimeline.reduce((cursor, item) => Math.max(cursor, item.sequence ?? 0), 0)
+        unsubscribe = adapter.subscribeSessionTimeline(selectedId, afterSequence, (updates) => {
+          if (cancelled || generation !== detailGeneration.current) return
+          setTimeline((current) => {
+            const next = mergeWorkHistoryTimeline(current, updates)
+            rememberSessionDetail(detailCache.current, selectedId, { timeline: next })
+            return next
+          })
+        }, (cause) => {
+          if (!cancelled && generation === detailGeneration.current) setError(cause.message)
+        })
+      } catch (cause) {
+        if (!cancelled && generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    }
+
     const cached = detailCache.current.get(selectedId)
     if (cached) {
       rememberSessionDetail(detailCache.current, selectedId, cached)
       setTimeline(cached.timeline)
       setLoading(false)
       setError(undefined)
-      return
+      startLive()
+      return () => {
+        cancelled = true
+        unsubscribe?.()
+      }
     }
-    let cancelled = false
+
     setTimeline([])
     setLoading(true)
     void adapter.getSessionTimeline(selectedId).then((nextTimeline) => {
@@ -238,10 +267,16 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
       if (generation !== detailGeneration.current) return
       setTimeline(nextTimeline)
       setError(undefined)
+      startLive()
     }).catch((cause) => {
       if (!cancelled && generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
-    }).finally(() => { if (!cancelled && generation === detailGeneration.current) setLoading(false) })
-    return () => { cancelled = true }
+    }).finally(() => {
+      if (!cancelled && generation === detailGeneration.current) setLoading(false)
+    })
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
   }, [adapter, selectedId])
 
   const toggleExpanded = (id: string) => setExpanded((current) => {
@@ -260,23 +295,18 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const refreshSelected = () => {
     if (!selectedId || refreshing) return
     const refreshSessionId = selectedId
-    const generation = ++detailGeneration.current
+    const generation = ++refreshGeneration.current
     setRefreshing(true)
-    void Promise.all([
-      adapter.getSession(refreshSessionId),
-      adapter.getSessionTimeline(refreshSessionId),
-    ]).then(([nextSession, nextTimeline]) => {
-      rememberSessionDetail(detailCache.current, refreshSessionId, { timeline: nextTimeline })
-      if (generation !== detailGeneration.current) return
+    void adapter.getSession(refreshSessionId).then((nextSession) => {
+      if (generation !== refreshGeneration.current) return
       const normalized = normalizeWorkHistorySessions([nextSession])[0]
       if (normalized) setSessions((current) => current.map((session) => session.id === refreshSessionId ? normalized : session))
-      setTimeline(nextTimeline)
       setExpanded(new Set())
       setError(undefined)
     }).catch((cause) => {
-      if (generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
+      if (generation === refreshGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
     }).finally(() => {
-      if (generation === detailGeneration.current) setRefreshing(false)
+      if (generation === refreshGeneration.current) setRefreshing(false)
     })
   }
 
@@ -353,6 +383,16 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                     </div> : null}
                   </div>
                   {contextExpanded ? <>
+                    <article className="dshHelmContextCard">
+                      <div className="dshHelmContextHead">
+                        <span className="dshHelmContextRole">{labels.originChat}</span>
+                        <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
+                      </div>
+                      <details className="dshHelmContextTask">
+                        <summary>{labels.task}</summary>
+                        <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
+                      </details>
+                    </article>
                     {sortedBoundIntents.map((entry, index) => (
                       <article className="dshHelmContextCard" key={`${entry.boundAt}:${index}`}>
                         <div className="dshHelmContextHead">
@@ -368,16 +408,6 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                         </details>
                       </article>
                     ))}
-                    <article className="dshHelmContextCard">
-                      <div className="dshHelmContextHead">
-                        <span className="dshHelmContextRole">{labels.originChat}</span>
-                        <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
-                      </div>
-                      <details className="dshHelmContextTask">
-                        <summary>{labels.task}</summary>
-                        <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
-                      </details>
-                    </article>
                   </> : null}
                 </section>
                 <nav className="dshHelmTimelineFilters" aria-label={labels.panelTitle}>

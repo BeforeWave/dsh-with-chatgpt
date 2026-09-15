@@ -89,12 +89,21 @@ export function createDshRuntime(ctx: Context, config: Config): ChatGPTHelmRunti
   if ((config.provider && !config.model) || (!config.provider && config.model)) {
     throw new Error('dsh-with-chatgpt: provider and model must be configured together')
   }
+  let runtime: ChatGPTHelmRuntime | undefined
   const adapter = new DshAdapter(ctx, {
     id: config.adapterId,
     ...(config.provider ? { provider: config.provider } : {}),
     ...(config.model ? { model: config.model } : {}),
+    onWorkspaceUpsert: async (workspace) => {
+      if (!runtime?.running) return
+      await runtime.rpc.upsertAdapterWorkspace(workspace)
+    },
+    onWorkspaceRemove: async (workspaceId) => {
+      if (!runtime?.running) return
+      await runtime.rpc.removeAdapterWorkspace(workspaceId)
+    },
   })
-  return new ChatGPTHelmRuntime({
+  runtime = new ChatGPTHelmRuntime({
     daemonMode: parseDaemonMode(config.daemonMode),
     launcherOverride: launcherOverride(config),
     host: {
@@ -107,6 +116,7 @@ export function createDshRuntime(ctx: Context, config: Config): ChatGPTHelmRunti
       warn: (message) => ctx.logger.warn(message),
     },
   })
+  return runtime
 }
 
 export function registerDshRuntimeRoutes(ctx: Context, runtime: ChatGPTHelmRuntime): () => void {

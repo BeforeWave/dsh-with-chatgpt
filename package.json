@@ -1,6 +1,6 @@
 {
   "name": "@beforewave/dsh-with-chatgpt",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Primary DSH entry for using ChatGPT with local code, Agent Helm engineering capabilities, and native DSH sessions.",
   "license": "MIT",
   "repository": {
@@ -74,8 +74,8 @@
     "pretest": "npm run build"
   },
   "dependencies": {
-    "@beforewave/agent-helm": "0.1.4",
-    "@beforewave/agent-helm-ui-contract": "0.1.4",
+    "@beforewave/agent-helm": "0.1.5",
+    "@beforewave/agent-helm-ui-contract": "0.1.5",
     "@anthropic-ai/sandbox-runtime": "^0.0.74",
     "@modelcontextprotocol/sdk": "1.30.0"
   },

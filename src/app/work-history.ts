@@ -69,11 +69,31 @@ function sortWorkHistoryTimelineNewestFirst<T extends { timestamp: string; seque
   return timeline
     .map((item, index) => ({ item, index }))
     .sort((left, right) => {
+      const leftSequence = typeof left.item.sequence === 'number' ? left.item.sequence : undefined
+      const rightSequence = typeof right.item.sequence === 'number' ? right.item.sequence : undefined
+      if (leftSequence !== undefined && rightSequence !== undefined && leftSequence !== rightSequence) return rightSequence - leftSequence
       const byTime = workHistoryTimestamp(right.item.timestamp) - workHistoryTimestamp(left.item.timestamp)
       if (byTime) return byTime
-      const leftSequence = typeof left.item.sequence === 'number' ? left.item.sequence : left.index
-      const rightSequence = typeof right.item.sequence === 'number' ? right.item.sequence : right.index
-      return rightSequence - leftSequence
+      return (rightSequence ?? right.index) - (leftSequence ?? left.index)
+    })
+    .map(({ item }) => item)
+}
+
+export function mergeWorkHistoryTimeline<T extends { id: string; timestamp: string; sequence?: number }>(
+  current: readonly T[],
+  updates: readonly T[],
+): T[] {
+  const byId = new Map(current.map((item) => [item.id, item]))
+  for (const update of updates) byId.set(update.id, update)
+  return [...byId.values()]
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftSequence = typeof left.item.sequence === 'number' ? left.item.sequence : Number.MAX_SAFE_INTEGER
+      const rightSequence = typeof right.item.sequence === 'number' ? right.item.sequence : Number.MAX_SAFE_INTEGER
+      if (leftSequence !== rightSequence) return leftSequence - rightSequence
+      const byTime = workHistoryTimestamp(left.item.timestamp) - workHistoryTimestamp(right.item.timestamp)
+      if (byTime) return byTime
+      return left.item.id.localeCompare(right.item.id) || left.index - right.index
     })
     .map(({ item }) => item)
 }

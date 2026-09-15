@@ -20,6 +20,12 @@ export interface HelmSessionAdapter {
   getSession(sessionId: string): Promise<ChatSessionSummary>
   openUrl(url: string): void
   getSessionTimeline(sessionId: string): Promise<ChatSessionTimelineItem[]>
+  subscribeSessionTimeline(
+    sessionId: string,
+    afterSequence: number,
+    onUpdates: (updates: ChatSessionTimelineItem[]) => void,
+    onError?: (error: Error) => void,
+  ): () => void
 }
 
 export interface HelmUiAdapter extends HelmStatusAdapter, HelmSessionAdapter {}
@@ -129,6 +135,92 @@ async function probeRecoveredStatus(
   )
 }
 
+function dispatchTimelineStreamEvent(
+  event: string,
+  data: string,
+  onUpdates: (updates: ChatSessionTimelineItem[]) => void,
+  onError?: (error: Error) => void,
+): void {
+  try {
+    const value = JSON.parse(data) as { updates?: unknown; error?: unknown }
+    if (event === 'timeline') {
+      if (!Array.isArray(value.updates)) throw new Error('timeline stream payload is missing updates')
+      onUpdates(value.updates as ChatSessionTimelineItem[])
+    } else if (event === 'timeline-error') {
+      onError?.(new Error(typeof value.error === 'string' ? value.error : 'Work History live stream failed'))
+    }
+  } catch (cause) {
+    onError?.(cause instanceof Error ? cause : new Error(String(cause)))
+  }
+}
+
+function subscribeTimelineStreamWithEventSource(
+  url: string,
+  onUpdates: (updates: ChatSessionTimelineItem[]) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const source = new EventSource(url)
+  source.addEventListener('timeline', (event) => dispatchTimelineStreamEvent('timeline', (event as MessageEvent<string>).data, onUpdates, onError))
+  source.addEventListener('timeline-error', (event) => dispatchTimelineStreamEvent('timeline-error', (event as MessageEvent<string>).data, onUpdates, onError))
+  return () => source.close()
+}
+
+function subscribeTimelineStreamWithFetch(
+  url: string,
+  headers: Record<string, string>,
+  onUpdates: (updates: ChatSessionTimelineItem[]) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  let stopped = false
+  let controller: AbortController | undefined
+
+  const run = async (): Promise<void> => {
+    while (!stopped) {
+      controller = new AbortController()
+      try {
+        const response = await fetch(url, {
+          cache: 'no-store',
+          headers: { accept: 'text/event-stream', ...headers },
+          signal: controller.signal,
+        })
+        if (!response.ok || !response.body) throw new Error('timeline stream request failed (HTTP ' + response.status + ')')
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        while (!stopped) {
+          const chunk = await reader.read()
+          if (chunk.value) buffer += decoder.decode(chunk.value, { stream: !chunk.done })
+          buffer = buffer.replace(/\r\n/g, '\n')
+          let boundary = buffer.indexOf('\n\n')
+          while (boundary >= 0) {
+            const frame = buffer.slice(0, boundary)
+            buffer = buffer.slice(boundary + 2)
+            let event = 'message'
+            const data: string[] = []
+            for (const line of frame.split('\n')) {
+              if (line.startsWith('event:')) event = line.slice(6).trim()
+              else if (line.startsWith('data:')) data.push(line.slice(5).trimStart())
+            }
+            if (data.length) dispatchTimelineStreamEvent(event, data.join('\n'), onUpdates, onError)
+            boundary = buffer.indexOf('\n\n')
+          }
+          if (chunk.done) break
+        }
+      } catch (cause) {
+        const aborted = cause instanceof DOMException && cause.name === 'AbortError'
+        if (!stopped && !aborted) onError?.(cause instanceof Error ? cause : new Error(String(cause)))
+      }
+      if (!stopped) await sleep(1000)
+    }
+  }
+
+  void run()
+  return () => {
+    stopped = true
+    controller?.abort()
+  }
+}
+
 export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): HelmUiAdapter {
   const statusUrl = `${baseUrl}${STATUS_PATH}`
   const sessionUrl = `${baseUrl}${SESSION_PATH}`
@@ -206,6 +298,15 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
     },
     async getSessionTimeline(sessionId) {
       return (await request<{ timeline: ChatSessionTimelineItem[] }>(`${sessionUrl}/${encodeURIComponent(sessionId)}/timeline`)).timeline
+    },
+    subscribeSessionTimeline(sessionId, afterSequence, onUpdates, onError) {
+      const streamPath = sessionUrl + '/' + encodeURIComponent(sessionId) + '/timeline/stream'
+      const streamUrl = /^https?:\/\//.test(streamPath) ? new URL(streamPath) : new URL(streamPath, window.location.href)
+      streamUrl.searchParams.set('afterSequence', String(afterSequence))
+      const url = streamUrl.toString()
+      return accessToken
+        ? subscribeTimelineStreamWithFetch(url, extraHeaders, onUpdates, onError)
+        : subscribeTimelineStreamWithEventSource(url, onUpdates, onError)
     },
     openUrl(url) {
       window.open(url, '_blank', 'noopener,noreferrer')

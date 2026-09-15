@@ -673,6 +673,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     : undefined
   const effectivePolicy = status?.effectiveExternalAccess ?? { enabled: false, mutations: false, delegation: false }
   const configuredPolicy = status?.externalUserAccess ?? { enabled: false, mutations: false, delegation: false }
+  const serenaUnavailable = status?.dependencies.serena.state === 'unavailable'
   const codeSenseState: HelmUiRuntimeState = !status
     ? 'unavailable'
     : status.dependencies.serena.state === 'unavailable'
@@ -771,8 +772,8 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName">{t('externalAgentLsp')}</span>
                         <StatusSwitch
-                          enabled={status.externalAgentLsp.enabled}
-                          disabled={status.core.state !== 'running' || !status.externalAgentLsp.configurable || pendingTarget !== undefined}
+                          enabled={!serenaUnavailable && status.externalAgentLsp.enabled}
+                          disabled={serenaUnavailable || status.core.state !== 'running' || !status.externalAgentLsp.configurable || pendingTarget !== undefined}
                           label={t('toggleExternalAgentLsp')}
                           onChange={(enabled) => { void setExternalAgentLspEnabled(enabled) }}
                         />
@@ -780,8 +781,8 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName">{t('localMcp')}</span>
                         <StatusSwitch
-                          enabled={status.localMcp.state === 'running'}
-                          disabled={status.core.state !== 'running' || pendingTarget !== undefined}
+                          enabled={!serenaUnavailable && status.localMcp.state === 'running'}
+                          disabled={serenaUnavailable || status.core.state !== 'running' || pendingTarget !== undefined}
                           label={t('toggleLocalMcp')}
                           onChange={(enabled) => { void setEnabled('localMcp', enabled) }}
                         />

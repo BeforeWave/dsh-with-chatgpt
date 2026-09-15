@@ -12,6 +12,36 @@ function json(res: ServerResponse, code: number, value: unknown): void {
   res.end(JSON.stringify(value))
 }
 
+function writeSseEvent(res: ServerResponse, event: string, value: unknown): void {
+  if (res.destroyed || res.writableEnded) return
+  res.write(`event: ${event}
+data: ${JSON.stringify(value)}
+
+`)
+}
+
+function streamSessionTimeline(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse, sessionId: string, afterSequence: number): void {
+  res.writeHead(200, {
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-store',
+    connection: 'keep-alive',
+    'x-accel-buffering': 'no',
+  })
+  res.write('retry: 1000\n\n')
+  const unsubscribe = runtime.subscribeSessionTimeline(sessionId, afterSequence, {
+    onUpdates: (updates) => writeSseEvent(res, 'timeline', { updates }),
+    onError: (error) => writeSseEvent(res, 'timeline-error', { error: error.message }),
+  })
+  let cleaned = false
+  const cleanup = () => {
+    if (cleaned) return
+    cleaned = true
+    unsubscribe()
+  }
+  req.once('aborted', cleanup)
+  res.once('close', cleanup)
+}
+
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
   for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
@@ -107,12 +137,22 @@ export async function handleHelmSessionRequest(runtime: ChatGPTHelmRuntime, req:
       res.setHeader('allow', 'GET')
       return json(res, 405, { error: 'method not allowed' })
     }
-    const [sessionId, child] = parts
-    if (!sessionId || parts.length > 2) return json(res, 404, { error: 'not found' })
+    const [sessionId, child, grandchild] = parts
+    if (!sessionId || parts.length > 3) return json(res, 404, { error: 'not found' })
     if (!child) {
       const session = await runtime.getSession(sessionId)
       return session ? json(res, 200, { session }) : json(res, 404, { error: 'ChatGPT session not found' })
     }
+    if (child === 'timeline' && grandchild === 'stream') {
+      const session = await runtime.getSession(sessionId)
+      if (!session) return json(res, 404, { error: 'ChatGPT session not found' })
+      const rawAfterSequence = new URL(req.url ?? '/', 'http://127.0.0.1').searchParams.get('afterSequence')
+      const afterSequence = rawAfterSequence === null ? 0 : Number.parseInt(rawAfterSequence, 10)
+      if (!Number.isInteger(afterSequence) || afterSequence < 0) return json(res, 400, { error: 'afterSequence must be a non-negative integer' })
+      streamSessionTimeline(runtime, req, res, sessionId, afterSequence)
+      return
+    }
+    if (grandchild) return json(res, 404, { error: 'not found' })
     if (child === 'timeline') return json(res, 200, { timeline: await runtime.getSessionTimeline(sessionId) })
     if (child === 'activity') return json(res, 200, { activity: await runtime.getSessionActivity(sessionId) })
     if (child === 'delegations') return json(res, 200, { delegations: await runtime.getSessionDelegations(sessionId) })

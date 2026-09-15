@@ -9,7 +9,7 @@ import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
-import type {} from '@deepseek-ai/dsh-workspace'
+import type { Workspace } from '@deepseek-ai/dsh-workspace'
 import type {
   AgentAdapter,
   CreateSessionInput,
@@ -23,6 +23,8 @@ export interface DshAdapterConfig {
   id?: string
   provider?: string
   model?: string
+  onWorkspaceUpsert?: (workspace: AdapterWorkspaceRef) => Promise<void>
+  onWorkspaceRemove?: (workspaceId: string) => Promise<void>
 }
 
 type Loaded = { agent?: Agent; events: readonly SessionEvent[]; header: unknown }
@@ -45,7 +47,7 @@ async function waitWithSignal<T>(promise: Promise<T>, signal?: AbortSignal): Pro
 
 export class DshAdapter implements AgentAdapter {
   readonly id: string
-  readonly displayName = 'DeepSeek Harness'
+  readonly displayName = 'DSH'
   readonly capabilities = {
     persistentSession: true,
     nativeUi: true,
@@ -57,8 +59,54 @@ export class DshAdapter implements AgentAdapter {
 
   readonly #owned = new Map<string, { agent: Agent; dispose(): Promise<void> }>()
 
+  readonly #workspaceMutationRestorers: Array<() => void> = []
+  readonly #trackedWorkspaceEntities = new WeakSet<object>()
+
   constructor(readonly ctx: Context, readonly config: DshAdapterConfig = {}) {
     this.id = config.id?.trim() || 'dsh'
+    this.#installWorkspaceMutationBridge()
+  }
+
+  #workspaceRef(workspace: Workspace): AdapterWorkspaceRef {
+    return {
+      id: workspace.id,
+      path: workspace.path,
+      title: workspace.title,
+      sessionCount: workspace.sessionIds.length,
+    }
+  }
+
+  #trackWorkspaceEntity(workspace: Workspace): Workspace {
+    if (this.#trackedWorkspaceEntities.has(workspace as object)) return workspace
+    this.#trackedWorkspaceEntities.add(workspace as object)
+    const originalSetTitle = workspace.setTitle
+    workspace.setTitle = async (title: string) => {
+      await originalSetTitle.call(workspace, title)
+      await this.config.onWorkspaceUpsert?.(this.#workspaceRef(workspace))
+    }
+    this.#workspaceMutationRestorers.push(() => { workspace.setTitle = originalSetTitle })
+    return workspace
+  }
+
+  #installWorkspaceMutationBridge(): void {
+    if (!this.config.onWorkspaceUpsert && !this.config.onWorkspaceRemove) return
+    const registry = this.ctx.get('workspaceRegistry')
+    if (!registry) return
+    for (const workspace of registry.list()) this.#trackWorkspaceEntity(workspace)
+    const originalCreate = registry.create
+    registry.create = async (path: string, title?: string) => {
+      const workspace = this.#trackWorkspaceEntity(await originalCreate.call(registry, path, title))
+      await this.config.onWorkspaceUpsert?.(this.#workspaceRef(workspace))
+      return workspace
+    }
+    const originalDelete = registry.delete
+    registry.delete = async (id) => {
+      const removed = await originalDelete.call(registry, id)
+      if (removed) await this.config.onWorkspaceRemove?.(id)
+      return removed
+    }
+    this.#workspaceMutationRestorers.push(() => { registry.create = originalCreate })
+    this.#workspaceMutationRestorers.push(() => { registry.delete = originalDelete })
   }
 
   #agentOptions(): AgentOptions {
@@ -329,6 +377,7 @@ export class DshAdapter implements AgentAdapter {
   }
 
   async disposeOwned(): Promise<void> {
+    while (this.#workspaceMutationRestorers.length) this.#workspaceMutationRestorers.pop()?.()
     const handles = [...this.#owned.values()]
     this.#owned.clear()
     await Promise.allSettled(handles.map((handle) => handle.dispose()))
