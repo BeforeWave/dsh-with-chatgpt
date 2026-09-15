@@ -28,21 +28,22 @@ function session(overrides = {}) {
   }
 }
 
-test('DSH Work History consumes the Core-selected Session title', () => {
+test('DSH Work History list and detail consume the Core-selected latest-intent title while preserving full context history', () => {
   const value = session({
     originIntent: { message: 'Oldest context', task: 'Initial task' },
     boundIntents: [
       { intent: { message: 'Middle context', task: 'Middle task' }, boundAt: '2026-09-02T01:00:00.000Z' },
       { intent: { message: 'Newest context', task: 'Latest task' }, boundAt: '2026-09-02T02:00:00.000Z' },
     ],
-    presentation: { title: 'Core-selected title' },
+    presentation: { title: 'Newest context' },
   })
 
-  assert.equal(workHistory.createWorkHistorySessionDetailModel(value).title, 'Core-selected title')
-  assert.deepEqual(
-    workHistory.createWorkHistorySessionDetailModel(value).boundIntents.map((entry) => entry.intent.message),
-    ['Newest context', 'Middle context'],
-  )
+  const list = workHistory.createWorkHistorySessionListModel({ sessions: [value] })
+  const detail = workHistory.createWorkHistorySessionDetailModel(value)
+  assert.equal(list.items[0]?.title, 'Newest context')
+  assert.equal(detail.title, 'Newest context')
+  assert.equal(detail.originIntent?.message, 'Oldest context')
+  assert.deepEqual(detail.boundIntents.map((entry) => entry.intent.message), ['Newest context', 'Middle context'])
 })
 
 test('DSH Work History timeline is newest first', () => {
@@ -59,11 +60,27 @@ test('DSH Work History timeline is newest first', () => {
 })
 
 
-test('DSH Work History renders bound contexts before the origin context', () => {
+test('DSH Work History renders the origin context before bound contexts', () => {
   const component = readFileSync(new URL('../src/app/components/session-activity.tsx', import.meta.url), 'utf8')
-  const boundContexts = component.indexOf('{sortedBoundIntents.map')
-  const originContext = component.indexOf('{labels.originChat}', boundContexts)
+  const originContext = component.indexOf('{labels.originChat}')
+  const boundContexts = component.indexOf('{sortedBoundIntents.map', originContext)
 
-  assert.ok(boundContexts >= 0)
-  assert.ok(originContext > boundContexts)
+  assert.ok(originContext >= 0)
+  assert.ok(boundContexts > originContext)
+})
+
+test('DSH Work History live merge upserts by id without duplicates and keeps sequence ordering stable', () => {
+  const current = [
+    { id: 'call-1', actor: 'chatgpt', timestamp: '2026-09-14T00:00:01.000Z', sequence: 1, status: 'running' },
+    { id: 'call-2', actor: 'chatgpt', timestamp: '2026-09-14T00:00:02.000Z', sequence: 2 },
+  ]
+  const updates = [
+    { id: 'call-1', actor: 'chatgpt', timestamp: '2026-09-14T00:00:01.000Z', sequence: 1, status: 'success' },
+    { id: 'call-3', actor: 'chatgpt', timestamp: '2026-09-14T00:00:00.000Z', sequence: 3 },
+  ]
+
+  const merged = workHistory.mergeWorkHistoryTimeline(current, updates)
+  assert.deepEqual(merged.map((item) => item.id), ['call-1', 'call-2', 'call-3'])
+  assert.equal(merged.find((item) => item.id === 'call-1')?.status, 'success')
+  assert.deepEqual(workHistory.filterWorkHistoryTimeline(merged, 'all').map((item) => item.id), ['call-3', 'call-2', 'call-1'])
 })

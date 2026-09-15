@@ -10,8 +10,8 @@ const http = read('../src/runtime/http.ts')
 
 const expectedCoreMethods = [
   'configureTunnel', 'getChatSessionActivity', 'getChatSessionDelegations', 'getChatSessionSummary',
-  'getChatSessionTimeline', 'getLocalMcpConnection', 'installDependency', 'listChatSessionSummaryPage',
-  'reconcile', 'setCoreEnabled', 'setExternalUserAccess', 'setLocalMcpEnabled', 'shutdownDaemon', 'supervisorHealth',
+  'getChatSessionTimeline', 'getChatSessionTimelineUpdates', 'getLocalMcpConnection', 'installDependency', 'listChatSessionSummaryPage',
+  'reconcile', 'releaseChatSessionTimelineTail', 'setCoreEnabled', 'setExternalUserAccess', 'setLocalMcpEnabled', 'shutdownDaemon', 'supervisorHealth',
 ]
 
 test('DSH Core RPC method paths stay on the frozen entry contract', () => {

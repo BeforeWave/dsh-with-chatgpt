@@ -51,6 +51,7 @@ test('DSH keeps Agent Helm status routes registered when external Core is unavai
   const warnings = []
   let cleanup
   const ctx = {
+    get() { return undefined },
     logger: {
       info() {},
       warn(message) { warnings.push(String(message)) },
