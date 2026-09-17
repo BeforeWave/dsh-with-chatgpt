@@ -20,6 +20,7 @@ export interface HelmSessionAdapter {
   getSession(sessionId: string): Promise<ChatSessionSummary>
   openUrl(url: string): void
   getSessionTimeline(sessionId: string): Promise<ChatSessionTimelineItem[]>
+  subscribeWorkHistoryChanges(onChanged: () => void, onError?: (error: Error) => void): () => void
   subscribeSessionTimeline(
     sessionId: string,
     afterSequence: number,
@@ -152,6 +153,58 @@ function dispatchTimelineStreamEvent(
   } catch (cause) {
     onError?.(cause instanceof Error ? cause : new Error(String(cause)))
   }
+}
+
+function subscribeWorkHistoryStreamWithEventSource(
+  url: string,
+  onChanged: () => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const source = new EventSource(url)
+  source.addEventListener('changed', () => onChanged())
+  source.onerror = () => onError?.(new Error('Work History change stream failed'))
+  return () => source.close()
+}
+
+function subscribeWorkHistoryStreamWithFetch(
+  url: string,
+  headers: Record<string, string>,
+  onChanged: () => void,
+  onError?: (error: Error) => void,
+): () => void {
+  let stopped = false
+  let controller: AbortController | undefined
+  const run = async (): Promise<void> => {
+    while (!stopped) {
+      controller = new AbortController()
+      try {
+        const response = await fetch(url, { cache: 'no-store', headers: { accept: 'text/event-stream', ...headers }, signal: controller.signal })
+        if (!response.ok || !response.body) throw new Error('Work History change stream request failed (HTTP ' + response.status + ')')
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        while (!stopped) {
+          const chunk = await reader.read()
+          if (chunk.value) buffer += decoder.decode(chunk.value, { stream: !chunk.done })
+          buffer = buffer.replace(/\r\n/g, '\n')
+          let boundary = buffer.indexOf('\n\n')
+          while (boundary >= 0) {
+            const frame = buffer.slice(0, boundary)
+            buffer = buffer.slice(boundary + 2)
+            if (frame.split('\n').some((line) => line.trim() === 'event: changed')) onChanged()
+            boundary = buffer.indexOf('\n\n')
+          }
+          if (chunk.done) break
+        }
+      } catch (cause) {
+        const aborted = cause instanceof DOMException && cause.name === 'AbortError'
+        if (!stopped && !aborted) onError?.(cause instanceof Error ? cause : new Error(String(cause)))
+      }
+      if (!stopped) await sleep(1000)
+    }
+  }
+  void run()
+  return () => { stopped = true; controller?.abort() }
 }
 
 function subscribeTimelineStreamWithEventSource(
@@ -298,6 +351,14 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
     },
     async getSessionTimeline(sessionId) {
       return (await request<{ timeline: ChatSessionTimelineItem[] }>(`${sessionUrl}/${encodeURIComponent(sessionId)}/timeline`)).timeline
+    },
+    subscribeWorkHistoryChanges(onChanged, onError) {
+      const streamPath = sessionUrl + '/stream'
+      const streamUrl = /^https?:\/\//.test(streamPath) ? new URL(streamPath) : new URL(streamPath, window.location.href)
+      const url = streamUrl.toString()
+      return accessToken
+        ? subscribeWorkHistoryStreamWithFetch(url, extraHeaders, onChanged, onError)
+        : subscribeWorkHistoryStreamWithEventSource(url, onChanged, onError)
     },
     subscribeSessionTimeline(sessionId, afterSequence, onUpdates, onError) {
       const streamPath = sessionUrl + '/' + encodeURIComponent(sessionId) + '/timeline/stream'

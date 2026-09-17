@@ -51,6 +51,7 @@ export class ChatGPTHelmRuntime {
   #tunnelClientReady = false
   #startupError: string | undefined
   readonly #timelineSubscriptions: SessionTimelineSubscriptionHub
+  readonly #workHistorySubscribers = new Set<() => void>()
 
   constructor(readonly options: ChatGPTHelmRuntimeOptions) {
     this.#timelineSubscriptions = new SessionTimelineSubscriptionHub(
@@ -68,7 +69,11 @@ export class ChatGPTHelmRuntime {
   async #attachRpc(): Promise<void> {
     if (this.#rpc?.connected) return
     if (!this.#coreSocket) throw new Error('dsh-with-chatgpt Core socket is not initialized')
-    const rpc = new AdapterRpcClient({ socket: this.#coreSocket, adapter: this.options.host.adapter })
+    const rpc = new AdapterRpcClient({
+      socket: this.#coreSocket,
+      adapter: this.options.host.adapter,
+      onWorkHistoryChanged: () => { for (const listener of [...this.#workHistorySubscribers]) listener() },
+    })
     try {
       await rpc.start()
       this.#rpc = rpc
@@ -322,6 +327,10 @@ export class ChatGPTHelmRuntime {
   }
   subscribeSessionTimeline(id: string, afterSequence: number, subscriber: SessionTimelineSubscriber): () => void {
     return this.#timelineSubscriptions.subscribe(id, afterSequence, subscriber)
+  }
+  subscribeWorkHistoryChanges(listener: () => void): () => void {
+    this.#workHistorySubscribers.add(listener)
+    return () => { this.#workHistorySubscribers.delete(listener) }
   }
   async getSessionActivity(id: string): Promise<ChatSessionActivity[]> { return await this.rpc.getChatSessionActivity(id) }
   async getSessionDelegations(id: string): Promise<DelegatedSession[]> { return await this.rpc.getChatSessionDelegations(id) }

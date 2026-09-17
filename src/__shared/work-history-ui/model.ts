@@ -133,3 +133,8 @@ export function filterWorkHistoryTimelineByIntentScope<T extends { timestamp: st
     return Number.isFinite(timestamp) && timestamp >= startedAt && timestamp < endedAt
   })
 }
+
+export function mergeWorkHistorySessionPage<T extends { id: string }>(current: readonly T[], latestPage: readonly T[]): T[] {
+  const latestIds = new Set(latestPage.map((item) => item.id))
+  return [...latestPage, ...current.filter((item) => !latestIds.has(item.id))]
+}

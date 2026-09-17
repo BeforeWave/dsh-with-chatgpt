@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChatSessionTimelineItem } from '@beforewave/agent-helm'
 import { IntentRow, WorkHistoryActivityTimeline, WorkHistoryIntentDetail, WorkHistoryIntentList, WorkHistoryRow, installWorkHistoryUiStyles, workHistoryIntentTitle, type WorkHistoryActivityRowData } from '../../__shared/work-history-ui/index.js'
-import { createWorkHistoryIntentActivityScopes, filterWorkHistoryTimelineByIntentScope } from '../../__shared/work-history-ui/model.js'
+import { createWorkHistoryIntentActivityScopes, filterWorkHistoryTimelineByIntentScope, mergeWorkHistorySessionPage } from '../../__shared/work-history-ui/model.js'
 import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationLabel, type WorkHistorySession } from '../../ui-contract.js'
 import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, loadWorkHistoryConversationTimeline, mergeWorkHistoryConversationTimelineUpdates } from '../work-history.js'
 import type { HelmSessionAdapter } from '../adapter.js'
@@ -204,6 +204,35 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
       }
     })()
     return () => { cancelled = true }
+  }, [adapter])
+
+  useEffect(() => {
+    let cancelled = false
+    let refreshing = false
+    let pending = false
+    const refreshFirstPage = (): void => {
+      if (refreshing) { pending = true; return }
+      refreshing = true
+      void adapter.listSessionPage().then((page) => {
+        if (cancelled) return
+        const normalized = normalizeWorkHistorySessions(page.sessions)
+        setSessions((current) => {
+          const merged = page.nextCursor ? mergeWorkHistorySessionPage(current, normalized) : normalized
+          setNextCursor(page.nextCursor ? String(merged.length) : undefined)
+          return merged
+        })
+        setError(undefined)
+      }).catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause))
+      }).finally(() => {
+        refreshing = false
+        if (!cancelled && pending) { pending = false; refreshFirstPage() }
+      })
+    }
+    const unsubscribe = adapter.subscribeWorkHistoryChanges(refreshFirstPage, (cause) => {
+      if (!cancelled) setError(cause.message)
+    })
+    return () => { cancelled = true; unsubscribe() }
   }, [adapter])
 
   useEffect(() => {

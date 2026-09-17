@@ -20,6 +20,25 @@ data: ${JSON.stringify(value)}
 `)
 }
 
+function streamWorkHistoryChanges(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse): void {
+  res.writeHead(200, {
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-store',
+    connection: 'keep-alive',
+    'x-accel-buffering': 'no',
+  })
+  res.write('retry: 1000\n\n')
+  const unsubscribe = runtime.subscribeWorkHistoryChanges(() => writeSseEvent(res, 'changed', {}))
+  let cleaned = false
+  const cleanup = () => {
+    if (cleaned) return
+    cleaned = true
+    unsubscribe()
+  }
+  req.once('aborted', cleanup)
+  res.once('close', cleanup)
+}
+
 function streamSessionTimeline(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse, sessionId: string, afterSequence: number): void {
   res.writeHead(200, {
     'content-type': 'text/event-stream; charset=utf-8',
@@ -136,6 +155,10 @@ export async function handleHelmSessionRequest(runtime: ChatGPTHelmRuntime, req:
     if (req.method !== 'GET') {
       res.setHeader('allow', 'GET')
       return json(res, 405, { error: 'method not allowed' })
+    }
+    if (parts.length === 1 && parts[0] === 'stream') {
+      streamWorkHistoryChanges(runtime, req, res)
+      return
     }
     const [sessionId, child, grandchild] = parts
     if (!sessionId || parts.length > 3) return json(res, 404, { error: 'not found' })
