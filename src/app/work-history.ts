@@ -1,4 +1,5 @@
-import type { WorkHistoryBoundConversationIntent, WorkHistoryConversationIntent, WorkHistorySession, WorkHistoryWorkspaceReference } from '@beforewave/agent-helm-ui-contract'
+import type { WorkHistoryBoundConversationIntent, WorkHistoryConversationIntent, WorkHistorySession, WorkHistoryWorkspaceReference } from '../ui-contract.js'
+import { filterWorkHistoryActivityItems, mergeGroupedWorkHistoryTimeline, type WorkHistoryActivityFilter } from '../__shared/work-history-ui/model.js'
 
 export const WORK_HISTORY_ALL_WORKSPACES = 'all' as const
 export const WORK_HISTORY_PAGE_SIZE = 10
@@ -35,6 +36,13 @@ export interface WorkHistorySessionListModel {
   selected?: WorkHistorySession
 }
 
+export interface WorkHistoryIntentHistoryEntry {
+  kind: 'origin' | 'bound'
+  intent: WorkHistoryConversationIntent
+  effectiveAt: string
+  ordinal?: number
+}
+
 export interface WorkHistorySessionDetailModel {
   id: string
   title: string
@@ -48,6 +56,7 @@ export interface WorkHistorySessionDetailModel {
   delegationCount: number
   originIntent?: WorkHistoryConversationIntent
   boundIntents: WorkHistoryBoundConversationIntent[]
+  intentHistory: WorkHistoryIntentHistoryEntry[]
   chatUrls: string[]
   agentLabel?: string
   runtimeLabel?: string
@@ -65,18 +74,22 @@ function sortWorkHistoryBoundIntentsNewestFirst(entries: readonly WorkHistoryBou
     .map(({ entry }) => entry)
 }
 
-function sortWorkHistoryTimelineNewestFirst<T extends { timestamp: string; sequence?: number }>(timeline: readonly T[]): T[] {
-  return timeline
-    .map((item, index) => ({ item, index }))
-    .sort((left, right) => {
-      const leftSequence = typeof left.item.sequence === 'number' ? left.item.sequence : undefined
-      const rightSequence = typeof right.item.sequence === 'number' ? right.item.sequence : undefined
-      if (leftSequence !== undefined && rightSequence !== undefined && leftSequence !== rightSequence) return rightSequence - leftSequence
-      const byTime = workHistoryTimestamp(right.item.timestamp) - workHistoryTimestamp(left.item.timestamp)
-      if (byTime) return byTime
-      return (rightSequence ?? right.index) - (leftSequence ?? left.index)
-    })
-    .map(({ item }) => item)
+export function createWorkHistoryIntentHistory(session: WorkHistorySession): WorkHistoryIntentHistoryEntry[] {
+  const entries: WorkHistoryIntentHistoryEntry[] = session.boundIntents.map((entry, index) => ({
+    kind: 'bound',
+    intent: entry.intent,
+    effectiveAt: entry.boundAt,
+    ordinal: index + 1,
+  }))
+  if (session.originIntent) entries.push({
+    kind: 'origin',
+    intent: session.originIntent,
+    effectiveAt: session.createdAt,
+  })
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((left, right) => workHistoryTimestamp(right.entry.effectiveAt) - workHistoryTimestamp(left.entry.effectiveAt) || right.index - left.index)
+    .map(({ entry }) => entry)
 }
 
 export function mergeWorkHistoryTimeline<T extends { id: string; timestamp: string; sequence?: number }>(
@@ -96,6 +109,46 @@ export function mergeWorkHistoryTimeline<T extends { id: string; timestamp: stri
       return left.item.id.localeCompare(right.item.id) || left.index - right.index
     })
     .map(({ item }) => item)
+}
+
+
+export interface WorkHistoryConversationTimelineSnapshot<T> {
+  memberSessionIds: string[]
+  grouped: boolean
+  cursors: Record<string, number>
+  timeline: T[]
+}
+
+export async function loadWorkHistoryConversationTimeline<T extends { id: string; timestamp: string; sequence?: number }>(
+  session: Pick<WorkHistorySession, 'id' | 'memberSessionIds'>,
+  loadTimeline: (sessionId: string) => Promise<T[]>,
+): Promise<WorkHistoryConversationTimelineSnapshot<T>> {
+  const memberSessionIds = session.memberSessionIds?.length ? [...session.memberSessionIds] : [session.id]
+  const grouped = memberSessionIds.length > 1
+  const members = await Promise.all(memberSessionIds.map(async (memberSessionId) => ({
+    memberSessionId,
+    timeline: await loadTimeline(memberSessionId),
+  })))
+  const cursors: Record<string, number> = {}
+  let timeline: T[] = []
+  for (const member of members) {
+    cursors[member.memberSessionId] = member.timeline.reduce((cursor, item) => Math.max(cursor, item.sequence ?? 0), 0)
+    timeline = grouped
+      ? mergeGroupedWorkHistoryTimeline(timeline, member.memberSessionId, member.timeline)
+      : [...member.timeline]
+  }
+  return { memberSessionIds, grouped, cursors, timeline }
+}
+
+export function mergeWorkHistoryConversationTimelineUpdates<T extends { id: string; timestamp: string; sequence?: number }>(
+  current: readonly T[],
+  grouped: boolean,
+  memberSessionId: string,
+  updates: readonly T[],
+): T[] {
+  return grouped
+    ? mergeGroupedWorkHistoryTimeline(current, memberSessionId, updates)
+    : mergeWorkHistoryTimeline(current, updates)
 }
 
 export function workHistorySessionWorkspaceId(session: WorkHistorySession): string | undefined {
@@ -232,15 +285,15 @@ export function createWorkHistorySessionDetailModel(session: WorkHistorySession)
     delegationCount: session.delegationCount,
     ...(session.originIntent ? { originIntent: session.originIntent } : {}),
     boundIntents: sortWorkHistoryBoundIntentsNewestFirst(session.boundIntents),
+    intentHistory: createWorkHistoryIntentHistory(session),
     chatUrls: [...session.chatUrls],
     ...(session.agentLabel ? { agentLabel: session.agentLabel } : {}),
     ...(session.runtimeLabel ? { runtimeLabel: session.runtimeLabel } : {}),
   }
 }
 
-export type WorkHistoryActivityFilter = 'all' | 'chatgpt' | 'subagent'
+export type { WorkHistoryActivityFilter }
 
 export function filterWorkHistoryTimeline<T extends { actor: string; timestamp: string; sequence?: number }>(timeline: readonly T[], filter: WorkHistoryActivityFilter): T[] {
-  const filtered = filter === 'all' ? timeline : timeline.filter((item) => item.actor === filter)
-  return sortWorkHistoryTimelineNewestFirst(filtered)
+  return filterWorkHistoryActivityItems(timeline, filter)
 }

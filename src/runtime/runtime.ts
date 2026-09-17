@@ -15,7 +15,7 @@ import {
   type ExternalUserAccess,
   type TunnelSetupInput,
 } from '@beforewave/agent-helm'
-import { normalizeWorkHistorySession } from '@beforewave/agent-helm-ui-contract'
+import { normalizeWorkHistorySession } from '../ui-contract.js'
 
 const WORK_HISTORY_PAGE_SIZE = 10
 import type { ChatGPTHelmHostAdapter, ChatGPTHelmRuntimeLogger, LocalMcpRuntime } from './contracts.js'

@@ -8,10 +8,7 @@ import { build } from 'esbuild'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const packageName = '@beforewave/dsh-with-chatgpt'
-const localBuildDependencies = [
-  '@beforewave/agent-helm-ui-contract',
-  '@beforewave/agent-helm',
-]
+const localBuildDependencies = ['@beforewave/agent-helm']
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'))

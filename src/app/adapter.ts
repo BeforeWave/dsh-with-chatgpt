@@ -1,5 +1,5 @@
 import type { ChatSessionSummary, ChatSessionSummaryPage, ChatSessionTimelineItem } from '@beforewave/agent-helm'
-import type { TunnelSetupValues } from '@beforewave/agent-helm-ui-contract'
+import type { TunnelSetupValues } from '../ui-contract.js'
 import type { HelmUiDependencyName, HelmUiStatus } from '../runtime/status.js'
 
 export type HelmExternalCapability = 'enabled' | 'mutations' | 'delegation'

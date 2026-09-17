@@ -67,15 +67,15 @@
     }
   },
   "scripts": {
-    "build": "npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/index.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/runtime/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/runtime/index.js --external:@beforewave/agent-helm && node scripts/build-client.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "npm run prepare:shared && npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/index.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/runtime/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/runtime/index.js --external:@beforewave/agent-helm && node scripts/build-client.mjs",
+    "typecheck": "npm run prepare:shared && tsc -p tsconfig.json --noEmit",
     "clean": "node --input-type=module -e \"import {rmSync} from 'node:fs'; rmSync('lib',{recursive:true,force:true})\"",
     "test": "node --test tests/*.test.mjs",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "prepare:shared": "node scripts/prepare-shared.mjs"
   },
   "dependencies": {
     "@beforewave/agent-helm": "0.1.5",
-    "@beforewave/agent-helm-ui-contract": "0.1.5",
     "@anthropic-ai/sandbox-runtime": "^0.0.74",
     "@modelcontextprotocol/sdk": "1.30.0"
   },

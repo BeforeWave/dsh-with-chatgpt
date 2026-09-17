@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
-import { deriveHelmConnectionHealth, tunnelOnboardingSource, tunnelSetupCanSubmit, type TunnelSetupValues } from '@beforewave/agent-helm-ui-contract'
+import { deriveHelmConnectionHealth, tunnelOnboardingSource, tunnelSetupCanSubmit, type TunnelSetupValues } from '../ui-contract.js'
 import { helmUiDictionaries, type HelmLocaleKey, type HelmTranslate } from './locale.js'
 import { deriveHelmCapabilitySummary, getHelmCapabilityDefinition, shouldCompactHelmCapabilitySummary } from './presentation.js'
 import {
@@ -889,18 +889,16 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
           onClose={() => setSessionPanelOpen(false)}
           labels={{
             panelTitle: t('sessionPanelTitle'), close: t('sessionClose'), sessionList: t('sessionList'), sessionCount: t('sessionCount'), allWorkspaces: t('sessionAllWorkspaces'),
-            all: t('sessionAll'), chatgpt: t('sessionChatGPT'), subagent: t('sessionSubagent'), recentActivity: t('sessionRecentActivity'),
-            activities: t('sessionActivities'), chats: t('sessionChats'), workspace: t('sessionWorkspace'), created: t('sessionCreated'), updated: t('sessionUpdated'),
-            chatSessions: t('sessionChatSessions'), viewChats: t('sessionViewChats'), originChat: t('sessionOriginChat'), boundChats: t('sessionBoundChats'),
-            workContext: t('sessionWorkContext'), task: t('sessionTaskContext'), boundAt: t('sessionBoundAt'), unboundContext: t('sessionUnboundContext'),
+            all: t('sessionAll'), chatgpt: t('sessionChatGPT'), subagent: t('sessionSubagent'), workspace: t('sessionWorkspace'), created: t('sessionCreated'), updated: t('sessionUpdated'),
+            chatSessions: t('sessionChatSessions'), workContext: t('sessionWorkContext'), unboundContext: t('sessionUnboundContext'),
             openChat: t('sessionOpenChat'), sessionId: t('sessionIdValue'), copyId: t('sessionCopyId'), copied: t('sessionCopied'), refresh: t('sessionRefresh'), loadMore: t('sessionLoadMore'), actionGeneric: t('sessionAction'), actionRead: t('sessionActionRead'), actionSearch: t('sessionActionSearch'),
             actionInspect: t('sessionActionInspect'), actionDiagnostic: t('sessionActionDiagnostic'), actionEdit: t('sessionActionEdit'), actionVerify: t('sessionActionVerify'), actionCommand: t('sessionActionCommand'),
             statusSuccess: t('sessionStatusSuccess'), statusError: t('sessionStatusError'), delegationCreated: t('sessionDelegationCreated'),
             delegationAttached: t('sessionDelegationAttached'), delegationPrompted: t('sessionDelegationPrompted'), delegationResumed: t('sessionDelegationResumed'),
             delegationStatus: t('sessionDelegationStatus'), statusIdle: t('sessionStatusIdle'), statusRunning: t('sessionStatusRunningAgent'), statusWaiting: t('sessionStatusWaiting'),
-            statusFailed: t('sessionStatusFailedAgent'), statusCancelled: t('sessionStatusCancelled'), statusUnknown: t('sessionStatusUnknown'), fullTask: t('sessionFullTask'), followUpPrompts: t('sessionFollowUpPrompts'),
+            statusFailed: t('sessionStatusFailedAgent'), statusCancelled: t('sessionStatusCancelled'), statusUnknown: t('sessionStatusUnknown'),
             subagentSessionId: t('sessionSubagentId'), noSessions: t('sessionNone'), noTimeline: t('sessionNoTimeline'), loading: t('sessionLoading'),
-            loadError: t('sessionLoadError'), unassignedWorkspace: t('sessionUnassignedWorkspace'),
+            loadError: t('sessionLoadError'), unassignedWorkspace: t('sessionUnassignedWorkspace'), linked: t('sessionLinked'), unlinked: t('sessionUnlinked'), expand: t('sessionExpand'), collapse: t('sessionCollapse'), intents: t('sessionIntents'), conversation: t('sessionConversation'),
           }}
         />
       ) : null}

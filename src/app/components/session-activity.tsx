@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChatSessionTimelineItem } from '@beforewave/agent-helm'
-import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationDetail, type WorkHistoryPresentationLabel, type WorkHistoryPresentationTitle, type WorkHistorySession } from '@beforewave/agent-helm-ui-contract'
-import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, filterWorkHistoryTimeline, mergeWorkHistoryTimeline } from '../work-history.js'
+import { IntentRow, WorkHistoryActivityTimeline, WorkHistoryIntentDetail, WorkHistoryIntentList, WorkHistoryRow, installWorkHistoryUiStyles, workHistoryIntentTitle, type WorkHistoryActivityRowData } from '../../__shared/work-history-ui/index.js'
+import { createWorkHistoryIntentActivityScopes, filterWorkHistoryTimelineByIntentScope } from '../../__shared/work-history-ui/model.js'
+import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationLabel, type WorkHistorySession } from '../../ui-contract.js'
+import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, loadWorkHistoryConversationTimeline, mergeWorkHistoryConversationTimelineUpdates } from '../work-history.js'
 import type { HelmSessionAdapter } from '../adapter.js'
 
 const CSS_ID = '@beforewave/dsh-with-chatgpt/session-activity'
@@ -9,6 +11,9 @@ const DETAIL_CACHE_LIMIT = 5
 
 type SessionDetailCacheEntry = {
   timeline: ChatSessionTimelineItem[]
+  memberSessionIds: string[]
+  grouped: boolean
+  cursors: Record<string, number>
 }
 
 export interface SessionActivityLabels {
@@ -20,19 +25,11 @@ export interface SessionActivityLabels {
   all: string
   chatgpt: string
   subagent: string
-  recentActivity: string
-  activities: string
-  chats: string
   workspace: string
   created: string
   updated: string
   chatSessions: string
-  viewChats: string
-  originChat: string
-  boundChats: string
   workContext: string
-  task: string
-  boundAt: string
   unboundContext: string
   openChat: string
   sessionId: string
@@ -61,36 +58,41 @@ export interface SessionActivityLabels {
   statusFailed: string
   statusCancelled: string
   statusUnknown: string
-  fullTask: string
-  followUpPrompts: string
   subagentSessionId: string
   noSessions: string
   noTimeline: string
   loading: string
   loadError: string
   unassignedWorkspace: string
+  linked: string
+  unlinked: string
+  expand: string
+  collapse: string
+  intents: string
+  conversation: string
 }
 
 const css = `
 .dshHelmSessionScrim{position:fixed;inset:0;z-index:45;background:rgba(15,18,22,.32);display:flex;align-items:center;justify-content:center;padding:28px}
-.dshHelmSessionPanel{width:min(1180px,calc(100vw - 56px));height:min(780px,calc(100vh - 56px));border:1px solid var(--dsw-alias-border-inverted);border-radius:16px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;overflow:hidden}
+.dshHelmSessionPanel{--helm-border:var(--dsw-alias-border-l2);--helm-hover:var(--dsw-alias-interactive-bg-hover);--helm-secondary:var(--dsw-alias-label-secondary);--helm-business:var(--dsw-alias-state-business-primary);--helm-surface:var(--dsw-specific-menu);--helm-primary:var(--dsw-alias-label-primary);--helm-badge-bg:var(--dsw-alias-interactive-bg-hover);width:min(1180px,calc(100vw - 56px));height:min(780px,calc(100vh - 56px));border:1px solid var(--dsw-alias-border-inverted);border-radius:16px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;overflow:hidden}
 .dshHelmSessionHeader{height:64px;flex:none;padding:0 20px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:12px}.dshHelmSessionHeaderTitle{font-size:17px;font-weight:650;flex:1}.dshHelmSessionClose{width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:20px;cursor:pointer}.dshHelmSessionClose:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dshHelmHistoryBody{min-height:0;flex:1;display:flex}.dshHelmSessionNav{width:292px;flex:none;border-right:1px solid var(--dsw-alias-border-l2);display:flex;flex-direction:column;min-height:0}.dshHelmSessionNavHead{height:48px;flex:none;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter{flex:none;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter select{min-width:0;height:30px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);padding:0 8px;font:inherit}.dshHelmSessionList{min-height:0;overflow:auto;padding:8px}.dshHelmSessionCard{width:100%;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:inherit;padding:11px 12px;cursor:pointer}.dshHelmSessionCard:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmSessionCard[data-active=true]{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l2)}.dshHelmSessionCardTitle{font-size:13px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionCardTime{margin-top:4px;font-size:12px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionCardMeta{margin-top:6px;display:flex;gap:9px;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionLoadMore{width:calc(100% - 8px);margin:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);padding:7px 8px;font:12px/18px inherit;cursor:pointer}.dshHelmSessionLoadMore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dshHelmSessionLoadMore:disabled{opacity:.55;cursor:default}
-.dshHelmSessionDetail{min-width:0;flex:1;display:flex;flex-direction:column}.dshHelmSessionSummary{box-sizing:border-box;flex:none;padding:14px 20px 12px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmSessionSummaryTop{display:flex;align-items:flex-start;gap:16px}.dshHelmSessionSummaryMain{min-width:0;flex:1}.dshHelmSessionWorkspaceTitle{font-size:18px;line-height:25px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionTimes{margin-top:3px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;display:flex;gap:12px;white-space:nowrap;overflow:hidden}.dshHelmSessionIdWrap{min-width:0;max-width:310px;display:flex;align-items:center;gap:6px;font:11px/18px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dsw-alias-label-secondary)}.dshHelmSessionIdText{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionCopy{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;padding:2px 4px;border-radius:5px;cursor:pointer}.dshHelmSessionCopy:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.dshHelmSessionFacts{margin-top:8px;display:grid;grid-template-columns:90px minmax(0,1fr);grid-auto-rows:22px;align-items:center;column-gap:10px;font-size:12px}.dshHelmSessionFactLabel{color:var(--dsw-alias-label-secondary)}
-.dshHelmSessionContext{flex:none;max-height:300px;overflow:auto;padding:10px 20px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-menu)}.dshHelmSessionContextTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}.dshHelmSessionContext[data-expanded=true] .dshHelmSessionContextTitleRow{margin-bottom:10px}.dshHelmSessionContextToggle{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:inherit;padding:2px 0;font:inherit;cursor:pointer}.dshHelmSessionContextToggle:hover .dshHelmSessionContextTitle{color:var(--dsw-alias-label-primary)}.dshHelmSessionContextChevron{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionContextTitle{font-size:12px;font-weight:650}.dshHelmSessionContextChats{min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.dshHelmSessionContextChatsLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextChat{max-width:220px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);padding:3px 7px;font:11px/17px inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.dshHelmContextChat:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmContextCard{padding:10px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;margin-bottom:8px}.dshHelmContextCard:last-child{margin-bottom:0}.dshHelmContextHead{display:flex;align-items:center;gap:10px}.dshHelmContextRole{font-size:11px;font-weight:650;color:var(--dsw-alias-label-secondary)}.dshHelmContextMessage{min-width:0;flex:1;font-size:13px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmContextMeta{margin-top:5px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary);min-width:0}.dshHelmContextTask{margin-top:7px}.dshHelmContextTask summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextTaskText{margin-top:6px;padding:8px 10px;border-radius:7px;background:var(--dsw-alias-interactive-bg-hover);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:18px}.dshHelmTimelineFilters{height:48px;flex:none;padding:0 20px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:6px}.dshHelmTimelineFilter{border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);padding:5px 9px;font:12px/18px inherit;cursor:pointer}.dshHelmTimelineFilter:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmTimelineFilter[data-active=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);font-weight:600}
-.dshHelmTimeline{min-height:0;flex:1;overflow:auto;padding:6px 20px 22px}.dshHelmTimelineItem{display:grid;grid-template-columns:74px 76px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmTimelineTime{font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}.dshHelmTimelineActor{font-size:11px;line-height:18px}.dshHelmTimelineActorBadge{display:inline-flex;max-width:72px;padding:2px 6px;border-radius:999px;background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmTimelineContent{min-width:0}.dshHelmTimelineTitle{font-size:13px;font-weight:610;line-height:19px}.dshHelmTimelinePrimary{margin-top:2px;font-size:13px;line-height:19px;overflow-wrap:anywhere}.dshHelmTimelineSecondary{margin-top:3px;color:var(--dsw-alias-label-secondary);font-size:11px;line-height:17px;display:flex;gap:7px;flex-wrap:wrap}.dshHelmTimelineText{margin-top:7px;max-width:720px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-specific-menu);font:11px/17px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.dshHelmTimelineToggle{margin-top:6px;border:0;background:transparent;color:var(--dsw-alias-label-secondary);padding:0;font:11px/16px inherit;cursor:pointer}.dshHelmTimelineToggle:hover{color:var(--dsw-alias-label-primary)}.dshHelmTimelineEmpty{padding:56px 20px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}.dshHelmSessionError{margin:12px 20px 0;padding:8px 10px;border:1px solid var(--dsw-alias-state-error-primary);border-radius:8px;color:var(--dsw-alias-state-error-primary);font-size:12px}
-@media(max-width:820px){.dshHelmSessionPanel{width:calc(100vw - 28px);height:calc(100vh - 28px)}.dshHelmSessionNav{width:224px}.dshHelmTimelineItem{grid-template-columns:58px 64px minmax(0,1fr)}.dshHelmSessionFacts{grid-template-columns:72px minmax(0,1fr)}.dshHelmSessionContextTitleRow{align-items:flex-start;flex-direction:column}.dshHelmSessionContextChats{justify-content:flex-start}}
+.dshHelmHistoryBody{min-height:0;flex:1;display:flex}.dshHelmSessionNav{width:292px;flex:none;border-right:1px solid var(--dsw-alias-border-l2);display:flex;flex-direction:column;min-height:0}.dshHelmSessionNavHead{height:48px;flex:none;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter{flex:none;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionWorkspaceFilter select{min-width:0;height:30px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);padding:0 8px;font:inherit}.dshHelmSessionList{min-height:0;overflow:auto;padding:0}.dshHelmSessionLoadMore{width:calc(100% - 16px);margin:8px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);padding:7px 8px;font:12px/18px inherit;cursor:pointer}.dshHelmSessionLoadMore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dshHelmSessionLoadMore:disabled{opacity:.55;cursor:default}
+.dshHelmSessionDetail{min-width:0;flex:1;display:flex;flex-direction:column}.dshHelmSessionSummary{box-sizing:border-box;flex:none;padding:14px 20px 12px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmSessionSummaryTop{display:flex;align-items:flex-start;gap:16px}.dshHelmSessionSummaryMain{min-width:0;flex:1}.dshHelmSessionWorkspaceTitle{min-width:0;overflow-wrap:anywhere;font-size:18px;line-height:25px;font-weight:650}.dshHelmSessionIdWrap{min-width:0;max-width:310px;display:flex;align-items:center;gap:6px;font:11px/18px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dsw-alias-label-secondary)}.dshHelmSessionIdText{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dshHelmSessionCopy{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;padding:2px 4px;border-radius:5px;cursor:pointer}.dshHelmSessionCopy:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.dshHelmSessionFacts{margin-top:12px;display:grid;grid-template-columns:minmax(68px,90px) minmax(0,1fr);grid-auto-rows:minmax(22px,auto);align-items:center;column-gap:10px;row-gap:4px;font-size:12px;line-height:18px}.dshHelmSessionFactLabel{color:var(--dsw-alias-label-secondary)}.dshHelmSessionFacts time{color:var(--dsw-alias-label-secondary);white-space:nowrap}
+.dshHelmSessionContext{flex:none;padding:0;background:var(--dsw-specific-menu)}.dshHelmSessionContext[data-expanded=false]{border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmIntentToolbar{height:44px;flex:none;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}.dshHelmIntentBack{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);padding:5px 7px;font:12px/18px inherit;cursor:pointer}.dshHelmIntentBack:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmSessionContextTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px}.dshHelmSessionContextToggle{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:5px;background:transparent;color:inherit;padding:2px 4px;font:inherit;cursor:pointer}.dshHelmSessionContextToggle:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshHelmSessionContextChevron{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmSessionContextTitle{font-size:12px;font-weight:650}.dshHelmSessionContextChats{min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.dshHelmSessionContextChatsLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}.dshHelmContextChat{max-width:220px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);padding:3px 7px;font:11px/17px inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.dshHelmContextChat:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dshHelmSessionDetail>.timeline-section{min-height:0;flex:1;display:flex;flex-direction:column}.dshHelmSessionDetail>.timeline-section .timeline{min-height:0;flex:1;overflow:auto}.dshHelmTimelineEmpty{padding:56px 20px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13px}.dshHelmSessionError{margin:12px 20px 0;padding:8px 10px;border:1px solid var(--dsw-alias-state-error-primary);border-radius:8px;color:var(--dsw-alias-state-error-primary);font-size:12px}
+@media(max-width:820px){.dshHelmSessionPanel{width:calc(100vw - 28px);height:calc(100vh - 28px)}.dshHelmSessionNav{width:224px}.dshHelmSessionFacts{grid-template-columns:72px minmax(0,1fr)}.dshHelmSessionContextTitleRow{align-items:flex-start;flex-direction:column}.dshHelmSessionContextChats{justify-content:flex-start}}
 `
 
 export function installSessionActivityStyles(): () => void {
+  const removeSharedStyles = installWorkHistoryUiStyles()
   const existing = document.querySelector<HTMLStyleElement>(`style[data-plugin-css="${CSS_ID}"]`)
-  if (existing) return () => {}
+  if (existing) return removeSharedStyles
   const tag = document.createElement('style')
   tag.dataset.pluginCss = CSS_ID
   tag.textContent = css
   document.head.appendChild(tag)
-  return () => tag.remove()
+  return () => { tag.remove(); removeSharedStyles() }
 }
 
 function timeLabel(timestamp: string): string {
@@ -98,10 +100,6 @@ function timeLabel(timestamp: string): string {
   return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function shortTimeLabel(timestamp: string): string {
-  const date = new Date(timestamp)
-  return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
 
 function sessionContextFallback(labels: SessionActivityLabels): string {
   return labels.unboundContext
@@ -124,10 +122,6 @@ function presentationLabel(label: WorkHistoryPresentationLabel, labels: SessionA
   return labels.actionEdit
 }
 
-function presentationTitle(title: WorkHistoryPresentationTitle, labels: SessionActivityLabels): string {
-  return title.kind === 'text' ? title.text : presentationLabel(title.label, labels)
-}
-
 function statusLabel(status: string, labels: SessionActivityLabels): string {
   if (status === 'success') return labels.statusSuccess
   if (status === 'error') return labels.statusError
@@ -137,13 +131,6 @@ function statusLabel(status: string, labels: SessionActivityLabels): string {
   if (status === 'failed') return labels.statusFailed
   if (status === 'cancelled') return labels.statusCancelled
   return labels.statusUnknown
-}
-
-function presentationDetail(detail: WorkHistoryPresentationDetail, labels: SessionActivityLabels): string {
-  if (detail.kind === 'duration') return `${detail.durationMs} ms`
-  if (detail.kind === 'subagent-session') return `${labels.subagentSessionId}: ${detail.id}`
-  if (detail.kind === 'status') return statusLabel(detail.text, labels)
-  return detail.text
 }
 
 function rememberSessionDetail(cache: Map<string, SessionDetailCacheEntry>, sessionId: string, entry: SessionDetailCacheEntry): void {
@@ -161,9 +148,8 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string>()
   const [timeline, setTimeline] = useState<ChatSessionTimelineItem[]>([])
-  const [filter, setFilter] = useState<'all' | 'chatgpt' | 'subagent'>('all')
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
-  const [contextExpanded, setContextExpanded] = useState(true)
+  const [contextExpanded, setContextExpanded] = useState(false)
+  const [selectedIntentRef, setSelectedIntentRef] = useState<{ sessionId: string; scopeId: string }>()
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -180,11 +166,25 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   }), [sessions, workspaceFilter, selectedId])
   const workspaceOptions = sessionList.workspace.options
   const selected = sessionList.selected
+  const selectedMemberIds = selected ? (selected.memberSessionIds?.length ? selected.memberSessionIds : [selected.id]) : []
+  const selectedMembersKey = selectedMemberIds.join('\u0000')
   const selectedDetail = useMemo(() => selected ? createWorkHistorySessionDetailModel(selected) : undefined, [selected])
-  const selectedOrigin = selectedDetail?.originIntent
-  const sortedBoundIntents = selectedDetail?.boundIntents ?? []
+  const intentHistory = selectedDetail?.intentHistory ?? []
+  const intentScopes = useMemo(() => selectedDetail ? createWorkHistoryIntentActivityScopes([selectedDetail]) : [], [selectedDetail])
+  const selectedIntentScopeId = selectedIntentRef && selectedIntentRef.sessionId === selectedId ? selectedIntentRef.scopeId : undefined
+  const selectedIntent = selectedIntentScopeId ? intentScopes.find((scope) => scope.id === selectedIntentScopeId) : undefined
   const chatUrls = selectedDetail?.chatUrls ?? []
-  const visibleTimeline = useMemo(() => filterWorkHistoryTimeline(timeline, filter), [filter, timeline])
+  const visibleTimeline = useMemo(() => selectedIntent ? filterWorkHistoryTimelineByIntentScope(timeline, selectedIntent) : timeline, [selectedIntent, timeline])
+  useEffect(() => { setContextExpanded(false); setSelectedIntentRef(undefined) }, [selectedId])
+
+  const activityItems = useMemo<WorkHistoryActivityRowData[]>(() => visibleTimeline.map((item) => ({
+    id: `${item.sequence}:${item.id}`,
+    timestamp: item.timestamp,
+    sequence: item.sequence,
+    actor: item.actor,
+    actorLabel: item.actor === 'chatgpt' ? labels.chatgpt : item.actorName ?? labels.subagent,
+    presentation: normalizeWorkHistoryTimelinePresentation(item),
+  })), [labels.chatgpt, labels.subagent, visibleTimeline])
 
   useEffect(() => {
     let cancelled = false
@@ -215,59 +215,68 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     const generation = ++detailGeneration.current
     refreshGeneration.current += 1
     let cancelled = false
-    let unsubscribe: (() => void) | undefined
-    setExpanded(new Set())
+    const unsubscribes: Array<() => void> = []
     setContextExpanded(true)
+    setSelectedIntentRef(undefined)
     setCopied(false)
     setRefreshing(false)
-    if (!selectedId) {
+    if (!selectedId || !selected) {
       setTimeline([])
       setLoading(false)
       return () => { cancelled = true }
     }
 
-    const startLive = () => {
+    const startLive = (entry: SessionDetailCacheEntry) => {
       if (cancelled || generation !== detailGeneration.current) return
       try {
-        const currentTimeline = detailCache.current.get(selectedId)?.timeline ?? []
-        const afterSequence = currentTimeline.reduce((cursor, item) => Math.max(cursor, item.sequence ?? 0), 0)
-        unsubscribe = adapter.subscribeSessionTimeline(selectedId, afterSequence, (updates) => {
-          if (cancelled || generation !== detailGeneration.current) return
-          setTimeline((current) => {
-            const next = mergeWorkHistoryTimeline(current, updates)
-            rememberSessionDetail(detailCache.current, selectedId, { timeline: next })
-            return next
-          })
-        }, (cause) => {
-          if (!cancelled && generation === detailGeneration.current) setError(cause.message)
-        })
+        for (const memberSessionId of entry.memberSessionIds) {
+          const afterSequence = entry.cursors[memberSessionId] ?? 0
+          unsubscribes.push(adapter.subscribeSessionTimeline(memberSessionId, afterSequence, (updates) => {
+            if (cancelled || generation !== detailGeneration.current) return
+            setTimeline((current) => {
+              const next = mergeWorkHistoryConversationTimelineUpdates(current, entry.grouped, memberSessionId, updates)
+              const cachedEntry = detailCache.current.get(selectedId)
+              const nextCursor = updates.reduce((cursor, item) => Math.max(cursor, item.sequence ?? 0), cachedEntry?.cursors[memberSessionId] ?? afterSequence)
+              rememberSessionDetail(detailCache.current, selectedId, {
+                timeline: next,
+                memberSessionIds: entry.memberSessionIds,
+                grouped: entry.grouped,
+                cursors: { ...(cachedEntry?.cursors ?? entry.cursors), [memberSessionId]: nextCursor },
+              })
+              return next
+            })
+          }, (cause) => {
+            if (!cancelled && generation === detailGeneration.current) setError(cause.message)
+          }))
+        }
       } catch (cause) {
         if (!cancelled && generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
       }
     }
 
     const cached = detailCache.current.get(selectedId)
-    if (cached) {
+    if (cached && cached.memberSessionIds.join('\u0000') === selectedMembersKey) {
       rememberSessionDetail(detailCache.current, selectedId, cached)
       setTimeline(cached.timeline)
       setLoading(false)
       setError(undefined)
-      startLive()
+      startLive(cached)
       return () => {
         cancelled = true
-        unsubscribe?.()
+        for (const unsubscribe of unsubscribes) unsubscribe()
       }
     }
 
+    if (cached) detailCache.current.delete(selectedId)
     setTimeline([])
     setLoading(true)
-    void adapter.getSessionTimeline(selectedId).then((nextTimeline) => {
+    void loadWorkHistoryConversationTimeline(selected, (memberSessionId) => adapter.getSessionTimeline(memberSessionId)).then((entry) => {
       if (cancelled) return
-      rememberSessionDetail(detailCache.current, selectedId, { timeline: nextTimeline })
+      rememberSessionDetail(detailCache.current, selectedId, entry)
       if (generation !== detailGeneration.current) return
-      setTimeline(nextTimeline)
+      setTimeline(entry.timeline)
       setError(undefined)
-      startLive()
+      startLive(entry)
     }).catch((cause) => {
       if (!cancelled && generation === detailGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
     }).finally(() => {
@@ -275,16 +284,9 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     })
     return () => {
       cancelled = true
-      unsubscribe?.()
+      for (const unsubscribe of unsubscribes) unsubscribe()
     }
-  }, [adapter, selectedId])
-
-  const toggleExpanded = (id: string) => setExpanded((current) => {
-    const next = new Set(current)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    return next
-  })
+  }, [adapter, selectedId, selectedMembersKey])
 
   const copySessionId = () => {
     if (!selected) return
@@ -297,11 +299,19 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
     const refreshSessionId = selectedId
     const generation = ++refreshGeneration.current
     setRefreshing(true)
-    void adapter.getSession(refreshSessionId).then((nextSession) => {
+    void (async () => {
+      let cursor: string | undefined
+      do {
+        const page = await adapter.listSessionPage(cursor)
+        const normalized = normalizeWorkHistorySessions(page.sessions)
+        const match = normalized.find((session) => session.id === refreshSessionId)
+        if (match) return match
+        cursor = page.nextCursor
+      } while (cursor)
+      throw new Error(`Work History session not found: ${refreshSessionId}`)
+    })().then((normalized) => {
       if (generation !== refreshGeneration.current) return
-      const normalized = normalizeWorkHistorySessions([nextSession])[0]
-      if (normalized) setSessions((current) => current.map((session) => session.id === refreshSessionId ? normalized : session))
-      setExpanded(new Set())
+      setSessions((current) => current.map((session) => session.id === refreshSessionId ? normalized : session))
       setError(undefined)
     }).catch((cause) => {
       if (generation === refreshGeneration.current) setError(cause instanceof Error ? cause.message : String(cause))
@@ -346,104 +356,102 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
             </label>
             <div className="dshHelmSessionList">
               {sessionList.items.map((item) => (
-                <button type="button" key={item.id} className="dshHelmSessionCard" data-active={item.id === selectedId} onClick={() => setSelectedId(item.id)}>
-                  <div className="dshHelmSessionCardTitle">{item.title}</div>
-                  <div className="dshHelmSessionCardTime">{labels.recentActivity} · {timeLabel(item.lastActivityAt)}</div>
-                  <div className="dshHelmSessionCardMeta"><span>{item.chatCount} {labels.chats}</span></div>
-                </button>
+                <WorkHistoryRow
+                  key={item.id}
+                  item={{ id: item.id, title: item.title, timestamp: item.lastActivityAt, linked: item.session.chatUrls.length > 0 }}
+                  current={item.id === selectedId}
+                  linkedLabel={labels.linked}
+                  unlinkedLabel={labels.unlinked}
+                  formatTimestamp={timeLabel}
+                  onSelect={setSelectedId}
+                />
               ))}
               {nextCursor ? <button type="button" className="dshHelmSessionLoadMore" disabled={loadingPage} onClick={loadNextPage}>{labels.loadMore}</button> : null}
               {!sessionList.items.length && !loading ? <div className="dshHelmTimelineEmpty">{labels.noSessions}</div> : null}
             </div>
           </aside>
           <main className="dshHelmSessionDetail">
-            {selected ? (
+            {selected ? (selectedIntent ? (
+              <>
+                <div className="dshHelmIntentToolbar">
+                  <button type="button" className="dshHelmIntentBack" onClick={() => setSelectedIntentRef(undefined)}>← {labels.conversation}</button>
+                </div>
+                <WorkHistoryIntentDetail intent={selectedIntent.intent} timestamp={selectedIntent.startedAt} formatTimestamp={timeLabel} />
+                {error ? <div className="dshHelmSessionError">{labels.loadError}: {error}</div> : null}
+                <WorkHistoryActivityTimeline
+                  items={activityItems}
+                  labels={{
+                    all: labels.all,
+                    chatgpt: labels.chatgpt,
+                    subagent: labels.subagent,
+                    expand: labels.expand,
+                    collapse: labels.collapse,
+                    empty: loading ? labels.loading : labels.noTimeline,
+                    filterAriaLabel: workHistoryIntentTitle(selectedIntent.intent),
+                    subagentSessionId: labels.subagentSessionId,
+                    presentationLabel: (label) => presentationLabel(label, labels),
+                    statusLabel: (status) => statusLabel(status, labels),
+                  }}
+                  formatTimestamp={timeLabel}
+                />
+              </>
+            ) : (
               <>
                 <section className="dshHelmSessionSummary">
                   <div className="dshHelmSessionSummaryTop">
                     <div className="dshHelmSessionSummaryMain">
                       <div className="dshHelmSessionWorkspaceTitle">{selectedDetail?.title}</div>
-                      <div className="dshHelmSessionTimes"><span>{labels.created} · {timeLabel(selected.createdAt)}</span><span>{labels.updated} · {timeLabel(selected.lastActivityAt)}</span></div>
                     </div>
                     <div className="dshHelmSessionIdWrap"><button type="button" className="dshHelmSessionCopy" onClick={refreshSelected} disabled={refreshing}>↻ {labels.refresh}</button><span className="dshHelmSessionIdText">{labels.sessionId} {selected.id}</span><button type="button" className="dshHelmSessionCopy" onClick={copySessionId}>{copied ? labels.copied : labels.copyId}</button></div>
                   </div>
                   <div className="dshHelmSessionFacts">
+                    <div className="dshHelmSessionFactLabel">{labels.created}</div><div><time>{timeLabel(selected.createdAt)}</time></div>
+                    <div className="dshHelmSessionFactLabel">{labels.updated}</div><div><time>{timeLabel(selected.lastActivityAt)}</time></div>
                     <div className="dshHelmSessionFactLabel">{labels.workspace}</div><div>{selectedDetail?.workspaceLabel ?? labels.unassignedWorkspace}</div>
                   </div>
                 </section>
                 <section className="dshHelmSessionContext" data-expanded={contextExpanded} aria-label={labels.workContext}>
                   <div className="dshHelmSessionContextTitleRow">
                     <button type="button" className="dshHelmSessionContextToggle" aria-expanded={contextExpanded} onClick={() => setContextExpanded((value) => !value)}>
-                      <span className="dshHelmSessionContextTitle">{labels.workContext}</span>
-                      <span className="dshHelmSessionContextChevron" aria-hidden="true">{contextExpanded ? '▾' : '▸'}</span>
+                      <span className="dshHelmSessionContextTitle">{labels.intents} · {intentScopes.length || intentHistory.length}</span>
+                      <span className="dshHelmSessionContextChevron" aria-hidden="true">{contextExpanded ? labels.collapse : labels.expand}</span>
                     </button>
                     {contextExpanded && chatUrls.length ? <div className="dshHelmSessionContextChats">
                       <span className="dshHelmSessionContextChatsLabel">{labels.chatSessions}</span>
                       {chatUrls.map((url, index) => <button type="button" key={url} className="dshHelmContextChat" title={url} onClick={() => adapter.openUrl(url)}>{labels.openChat}{chatUrls.length > 1 ? ` ${index + 1}` : ''} ↗</button>)}
                     </div> : null}
                   </div>
-                  {contextExpanded ? <>
-                    <article className="dshHelmContextCard">
-                      <div className="dshHelmContextHead">
-                        <span className="dshHelmContextRole">{labels.originChat}</span>
-                        <span className="dshHelmContextMessage">{selectedOrigin?.message ?? selectedDetail?.title}</span>
-                      </div>
-                      <details className="dshHelmContextTask">
-                        <summary>{labels.task}</summary>
-                        <div className="dshHelmContextTaskText">{selectedOrigin?.task ?? sessionContextFallback(labels)}</div>
-                      </details>
-                    </article>
-                    {sortedBoundIntents.map((entry, index) => (
-                      <article className="dshHelmContextCard" key={`${entry.boundAt}:${index}`}>
-                        <div className="dshHelmContextHead">
-                          <span className="dshHelmContextRole">{labels.boundChats} {sortedBoundIntents.length - index}</span>
-                          <span className="dshHelmContextMessage">{entry.intent.message}</span>
-                        </div>
-                        <div className="dshHelmContextMeta">
-                          <span>{labels.boundAt} · {timeLabel(entry.boundAt)}</span>
-                        </div>
-                        <details className="dshHelmContextTask">
-                          <summary>{labels.task}</summary>
-                          <div className="dshHelmContextTaskText">{entry.intent.task}</div>
-                        </details>
-                      </article>
-                    ))}
-                  </> : null}
+                  {contextExpanded ? <WorkHistoryIntentList>
+                    {!intentHistory.length ? <IntentRow intent={{ task: selectedDetail?.title ?? '', message: sessionContextFallback(labels) }} /> : null}
+                    {intentScopes.length ? intentScopes.map((scope) => <IntentRow
+                      key={scope.id}
+                      intent={scope.intent}
+                      onOpen={() => setSelectedIntentRef({ sessionId: selected.id, scopeId: scope.id })}
+                    />) : intentHistory.map((entry, index) => <IntentRow
+                      key={`${entry.kind}:${entry.effectiveAt}:${index}`}
+                      intent={entry.intent}
+                    />)}
+                  </WorkHistoryIntentList> : null}
                 </section>
-                <nav className="dshHelmTimelineFilters" aria-label={labels.panelTitle}>
-                  <button type="button" className="dshHelmTimelineFilter" data-active={filter === 'all'} onClick={() => setFilter('all')}>{labels.all}</button>
-                  <button type="button" className="dshHelmTimelineFilter" data-active={filter === 'chatgpt'} onClick={() => setFilter('chatgpt')}>{labels.chatgpt}</button>
-                  <button type="button" className="dshHelmTimelineFilter" data-active={filter === 'subagent'} onClick={() => setFilter('subagent')}>{labels.subagent}</button>
-                </nav>
                 {error ? <div className="dshHelmSessionError">{labels.loadError}: {error}</div> : null}
-                <div className="dshHelmTimeline">
-                  {loading ? <div className="dshHelmTimelineEmpty">{labels.loading}</div> : visibleTimeline.length ? visibleTimeline.map((item) => {
-                    const presentation = normalizeWorkHistoryTimelinePresentation(item)
-                    const expandedSections = presentation.expanded ?? []
-                    const isExpanded = expanded.has(item.id)
-                    const hasDetails = expandedSections.length > 0
-                    const expandedText = expandedSections.map((section) => section.kind === 'task'
-                      ? `${labels.fullTask}\n${section.text}`
-                      : `${labels.followUpPrompts}\n${section.items.map((prompt) => `• ${prompt}`).join('\n')}`).join('\n\n')
-                    return (
-                      <article className="dshHelmTimelineItem" key={`${item.sequence}:${item.id}`}>
-                        <div className="dshHelmTimelineTime">{shortTimeLabel(item.timestamp)}</div>
-                        <div className="dshHelmTimelineActor"><span className="dshHelmTimelineActorBadge">{item.actor === 'chatgpt' ? labels.chatgpt : item.actorName ?? labels.subagent}</span></div>
-                        <div className="dshHelmTimelineContent">
-                          <div className="dshHelmTimelineTitle">{presentationTitle(presentation.title, labels)}</div>
-                          {presentation.primary ? <div className="dshHelmTimelinePrimary">{presentation.primary}</div> : null}
-                          <div className="dshHelmTimelineSecondary">
-                            {presentation.details.map((detail, detailIndex) => <span key={detailIndex}>{presentationDetail(detail, labels)}</span>)}
-                          </div>
-                          {hasDetails ? <button type="button" className="dshHelmTimelineToggle" onClick={() => toggleExpanded(item.id)}>{isExpanded ? '−' : '+'} {labels.fullTask}</button> : null}
-                          {isExpanded ? <div className="dshHelmTimelineText">{expandedText}</div> : null}
-                        </div>
-                      </article>
-                    )
-                  }) : <div className="dshHelmTimelineEmpty">{labels.noTimeline}</div>}
-                </div>
+                <WorkHistoryActivityTimeline
+                  items={activityItems}
+                  labels={{
+                    all: labels.all,
+                    chatgpt: labels.chatgpt,
+                    subagent: labels.subagent,
+                    expand: labels.expand,
+                    collapse: labels.collapse,
+                    empty: loading ? labels.loading : labels.noTimeline,
+                    filterAriaLabel: labels.panelTitle,
+                    subagentSessionId: labels.subagentSessionId,
+                    presentationLabel: (label) => presentationLabel(label, labels),
+                    statusLabel: (status) => statusLabel(status, labels),
+                  }}
+                  formatTimestamp={timeLabel}
+                />
               </>
-            ) : <div className="dshHelmTimelineEmpty">{loading ? labels.loading : labels.noSessions}</div>}
+            )) : <div className="dshHelmTimelineEmpty">{loading ? labels.loading : labels.noSessions}</div>}
           </main>
         </div>
       </section>
