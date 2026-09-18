@@ -159,8 +159,24 @@ function activityPresentationTitle(title: WorkHistoryPresentationTitle, labels: 
   return title.kind === 'text' ? title.text : labels.presentationLabel(title.label)
 }
 
+export function formatWorkHistoryDuration(durationMs: number): string {
+  const value = Math.max(0, Math.round(durationMs))
+  if (value < 1_000) return `${value} ms`
+  if (value < 60_000) {
+    const seconds = value / 1_000
+    return `${seconds < 10 ? seconds.toFixed(1).replace(/\.0$/, '') : Math.round(seconds)} s`
+  }
+  const totalSeconds = Math.floor(value / 1_000)
+  const seconds = totalSeconds % 60
+  const totalMinutes = Math.floor(totalSeconds / 60)
+  const minutes = totalMinutes % 60
+  const hours = Math.floor(totalMinutes / 60)
+  if (hours > 0) return `${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`
+  return `${totalMinutes}m ${String(seconds).padStart(2, '0')}s`
+}
+
 function activityPresentationDetail(detail: WorkHistoryPresentationDetail, labels: WorkHistoryActivityLabels): string {
-  if (detail.kind === 'duration') return `${detail.durationMs} ms`
+  if (detail.kind === 'duration') return formatWorkHistoryDuration(detail.durationMs)
   if (detail.kind === 'subagent-session') return `${labels.subagentSessionId}: ${detail.id}`
   if (detail.kind === 'status') return labels.statusLabel(detail.text)
   return detail.text
@@ -181,6 +197,14 @@ export function WorkHistoryActivityTimeline({ items, labels, formatTimestamp }: 
 }) {
   const [filter, setFilter] = useState<'all' | 'chatgpt' | 'subagent'>('all')
   const visible = filterWorkHistoryActivityItems(items, filter)
+  const hasRunning = items.some((item) => item.presentation.details.some((detail) => detail.kind === 'status' && detail.text === 'running'))
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!hasRunning) return
+    setNow(Date.now())
+    const timer = setInterval(() => setNow(Date.now()), 1_000)
+    return () => clearInterval(timer)
+  }, [hasRunning])
   return (
     <section className="helm-work-history-ui timeline-section">
       <nav className="timeline-filters" aria-label={labels.filterAriaLabel}>
@@ -191,12 +215,17 @@ export function WorkHistoryActivityTimeline({ items, labels, formatTimestamp }: 
       <div className="timeline">
         {visible.length ? visible.map((item) => {
           const details = splitWorkHistoryActivityDetails(item.presentation.details)
+          const running = details.statuses.some((detail) => detail.kind === 'status' && detail.text === 'running')
+          const startedAt = Date.parse(item.timestamp)
+          const runningDuration = running && Number.isFinite(startedAt) ? Math.max(0, now - startedAt) : undefined
           return (
             <article className="timeline-item" key={item.id}>
               <div className="timeline-item__meta">
                 <time>{formatTimestamp(item.timestamp)}</time>
                 <div className="timeline-item__meta-main">
-                  {details.durations.map((detail, index) => <span key={`duration:${index}`}>{activityPresentationDetail(detail, labels)}</span>)}
+                  {details.durations.length
+                    ? details.durations.map((detail, index) => <span key={`duration:${index}`}>{activityPresentationDetail(detail, labels)}</span>)
+                    : runningDuration !== undefined ? <span>{formatWorkHistoryDuration(runningDuration)}</span> : null}
                   {details.statuses.map((detail, index) => <span key={`status:${index}`}>{activityPresentationDetail(detail, labels)}</span>)}
                   <span className="actor-badge">{item.actorLabel}</span>
                 </div>
