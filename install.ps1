@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { throw 'This installer supports Windows only.' }
 
 $ReleaseUrl = 'https://github.com/BeforeWave/dsh-with-chatgpt/releases'
-$ReleaseToolUrl = if ($env:BEFOREWAVE_RELEASE_TOOL_URL) { $env:BEFOREWAVE_RELEASE_TOOL_URL } else { 'https://raw.githubusercontent.com/BeforeWave/agent-helm/main/install-release.ps1' }
+$ReleaseToolUrl = if ($env:BEFOREWAVE_RELEASE_TOOL_URL) { $env:BEFOREWAVE_RELEASE_TOOL_URL } else { 'https://raw.githubusercontent.com/BeforeWave/dsh-with-chatgpt/main/install-release.ps1' }
 
 function Fail([string]$Message) { throw "DSH with ChatGPT installer: $Message" }
 function Stage([int]$Number, [string]$Message) { Write-Host "DSH with ChatGPT [$Number/3] $Message" }
