@@ -67,7 +67,7 @@
     }
   },
   "scripts": {
-    "build": "npm run prepare:shared && npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/index.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/runtime/index.ts --bundle --platform=node --format=esm --target=node22 --minify --outfile=lib/runtime/index.js --external:@beforewave/agent-helm && node scripts/build-client.mjs",
+    "build": "npm run prepare:shared && npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --format=esm --target=node24 --minify --outfile=lib/index.js --external:@deepseek-ai/* --external:@beforewave/agent-helm && esbuild src/runtime/index.ts --bundle --platform=node --format=esm --target=node24 --minify --outfile=lib/runtime/index.js --external:@beforewave/agent-helm && node scripts/build-client.mjs",
     "typecheck": "npm run prepare:shared && tsc -p tsconfig.json --noEmit",
     "clean": "node --input-type=module -e \"import {rmSync} from 'node:fs'; rmSync('lib',{recursive:true,force:true})\"",
     "test": "node --test tests/*.test.mjs",
@@ -128,7 +128,7 @@
     "@deepseek-ai/dsh-client-ui-theme": "^0.1.1-rc.2"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "agentHelm": {
     "ownership": "integration"

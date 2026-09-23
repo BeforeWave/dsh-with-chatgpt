@@ -6,11 +6,11 @@ console.log('')
 console.log('DSH with ChatGPT — setup check')
 console.log('')
 
-if (nodeMajor >= 22) {
-  console.log(`  ✓ Node.js 22+ — v${process.versions.node}`)
+if (nodeMajor >= 24) {
+  console.log(`  ✓ Node.js 24+ — v${process.versions.node}`)
 } else {
-  console.log(`  ✗ Node.js 22+ — found v${process.versions.node}`)
-  console.log('    Upgrade Node.js to 22 or newer before using DSH with ChatGPT.')
+  console.log(`  ✗ Node.js 24+ — found v${process.versions.node}`)
+  console.log('    Upgrade Node.js to 24 or newer before using DSH with ChatGPT.')
 }
 
 console.log('')

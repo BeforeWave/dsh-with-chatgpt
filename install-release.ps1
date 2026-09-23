@@ -33,8 +33,23 @@ function Assert-SemVer([string]$Value) {
   }
 }
 
-function Invoke-GitHubRequest([string]$Uri) {
-  return Invoke-WebRequest -UseBasicParsing -Uri $Uri -MaximumRedirection 10
+function Invoke-GitHubRequest([string]$Uri, [string]$Output = '') {
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      if ($Output) {
+        Invoke-WebRequest -UseBasicParsing -Uri $Uri -MaximumRedirection 10 -TimeoutSec 180 -OutFile $Output | Out-Null
+        return
+      }
+      return Invoke-WebRequest -UseBasicParsing -Uri $Uri -MaximumRedirection 10 -TimeoutSec 180
+    } catch {
+      $responseProperty = $_.Exception.PSObject.Properties['Response']
+      $status = if ($null -ne $responseProperty -and $null -ne $responseProperty.Value) { [int]$responseProperty.Value.StatusCode } else { 0 }
+      # Do not retry permanent client errors; retry transient failures at most twice.
+      if ($status -ge 400 -and $status -lt 500 -and $status -ne 408 -and $status -ne 429) { throw }
+      if ($attempt -eq 3) { throw }
+      Start-Sleep -Seconds $attempt
+    }
+  }
 }
 
 function Get-EffectiveUri($Response) {
@@ -62,57 +77,33 @@ function Resolve-Version([string]$BaseUrl, [string]$RequestedVersion) {
   return $tag
 }
 
-function Assert-RemoteRelease([string]$BaseUrl, [string]$ExactVersion) {
-  $urlMatch = [regex]::Match($BaseUrl, '^https://github\.com/([^/]+)/([^/]+)/releases$')
-  $apiUri = "https://api.github.com/repos/$($urlMatch.Groups[1].Value)/$($urlMatch.Groups[2].Value)/releases/tags/v$ExactVersion"
-  try {
-    $response = Invoke-WebRequest -UseBasicParsing -Uri $apiUri -Headers @{ Accept = 'application/vnd.github+json' }
-  } catch {
-    $responseProperty = $_.Exception.PSObject.Properties['Response']
-    $status = if ($null -ne $responseProperty -and $null -ne $responseProperty.Value) { [int]$responseProperty.Value.StatusCode } else { 0 }
-    if ($status -eq 404) { Fail "GitHub Release v$ExactVersion does not exist" }
-    Fail "GitHub Release v$ExactVersion API request failed"
-  }
-  try {
-    $release = $response.Content | ConvertFrom-Json -ErrorAction Stop
-  } catch {
-    Fail "GitHub Release v$ExactVersion API returned invalid JSON"
-  }
-  if ($null -eq $release -or $release.tag_name -cne "v$ExactVersion" -or $release.draft -eq $true) {
-    Fail "GitHub Release v$ExactVersion API returned a mismatched or unpublished Release"
-  }
-  $assetsProperty = $release.PSObject.Properties['assets']
-  if ($null -eq $assetsProperty -or $null -eq $assetsProperty.Value -or @($assetsProperty.Value).Count -eq 0) {
-    Fail "GitHub Release v$ExactVersion has no assets"
-  }
-  $manifests = @($assetsProperty.Value | Where-Object { $null -ne $_ -and $_.name -ceq 'release-manifest.json' })
-  if ($manifests.Count -ne 1) {
-    Fail "GitHub Release v$ExactVersion does not provide a release-manifest.json asset"
-  }
-}
-
 function Get-Manifest([string]$BaseUrl, [string]$ExactVersion) {
   $uri = "$BaseUrl/download/v$ExactVersion/release-manifest.json"
   try {
     $response = Invoke-GitHubRequest $uri
-    return $response.Content | ConvertFrom-Json
   } catch {
     Fail "GitHub Release v$ExactVersion does not provide release-manifest.json"
   }
+  try {
+    $manifest = $response.Content | ConvertFrom-Json -ErrorAction Stop
+  } catch {
+    Fail "GitHub Release v$ExactVersion release-manifest.json is invalid JSON"
+  }
+  if ($null -eq $manifest -or $manifest.PSObject.Properties['releaseVersion'] -eq $null -or $manifest.releaseVersion -cne $ExactVersion) {
+    Fail "release manifest version does not match Release v$ExactVersion"
+  }
+  return $manifest
 }
 
 $ReleaseUrl = Normalize-ReleaseUrl $ReleaseUrl
 $Version = Resolve-Version $ReleaseUrl $Version
-Assert-RemoteRelease $ReleaseUrl $Version
+# The versioned manifest is the authoritative release proof. Avoid an extra
+# unauthenticated GitHub API request on every resolve/field/download call.
+$manifest = Get-Manifest $ReleaseUrl $Version
 
 if ($Command -eq 'resolve') {
   Write-Output $Version
   return
-}
-
-$manifest = Get-Manifest $ReleaseUrl $Version
-if ($manifest.PSObject.Properties['releaseVersion'] -and $manifest.releaseVersion -ne $Version) {
-  Fail "release manifest version does not match Release v$Version"
 }
 
 if ($Command -eq 'field') {
@@ -159,7 +150,12 @@ $outputDirectory = [System.IO.Path]::GetDirectoryName($outputPath)
 if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
   [System.IO.Directory]::CreateDirectory($outputDirectory) | Out-Null
 }
-Invoke-WebRequest -UseBasicParsing -Uri $artifact.downloadUrl -OutFile $outputPath
+try {
+  Invoke-GitHubRequest -Uri $artifact.downloadUrl -Output $outputPath
+} catch {
+  Remove-Item -LiteralPath $outputPath -Force -ErrorAction SilentlyContinue
+  throw
+}
 $actual = (Get-FileHash -LiteralPath $outputPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $expected = $artifact.sha256.ToLowerInvariant()
 if ($actual -ne $expected) {
