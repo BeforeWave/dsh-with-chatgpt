@@ -9,7 +9,8 @@ param(
   [string]$Version = 'latest',
   [string]$ArtifactId,
   [string]$Field,
-  [string]$Output
+  [string]$Output,
+  [string]$ManifestPath
 )
 
 Set-StrictMode -Version Latest
@@ -79,18 +80,33 @@ function Resolve-Version([string]$BaseUrl, [string]$RequestedVersion) {
 
 function Get-Manifest([string]$BaseUrl, [string]$ExactVersion) {
   $uri = "$BaseUrl/download/v$ExactVersion/release-manifest.json"
-  try {
-    $response = Invoke-GitHubRequest $uri
-  } catch {
-    Fail "GitHub Release v$ExactVersion does not provide release-manifest.json"
+  if ($ManifestPath -and (Test-Path -LiteralPath $ManifestPath)) {
+    $content = [System.IO.File]::ReadAllText([System.IO.Path]::GetFullPath($ManifestPath))
+  } else {
+    try {
+      $response = Invoke-GitHubRequest $uri
+    } catch {
+      Fail "GitHub Release v$ExactVersion does not provide release-manifest.json"
+    }
+    $content = if ($response.Content -is [byte[]]) {
+      [System.Text.Encoding]::UTF8.GetString($response.Content)
+    } else {
+      [string]$response.Content
+    }
   }
+  $content = $content.TrimStart([char]0xFEFF)
   try {
-    $manifest = $response.Content | ConvertFrom-Json -ErrorAction Stop
+    $manifest = $content | ConvertFrom-Json -ErrorAction Stop
   } catch {
     Fail "GitHub Release v$ExactVersion release-manifest.json is invalid JSON"
   }
   if ($null -eq $manifest -or $manifest.PSObject.Properties['releaseVersion'] -eq $null -or $manifest.releaseVersion -cne $ExactVersion) {
     Fail "release manifest version does not match Release v$ExactVersion"
+  }
+  if ($ManifestPath -and -not (Test-Path -LiteralPath $ManifestPath)) {
+    # Freeze one verified manifest for resolve, both pin lookups, and download.
+    # The caller owns a unique, temporary path and deletes it after activation.
+    [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($ManifestPath), [string]$content)
   }
   return $manifest
 }
