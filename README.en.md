@@ -8,9 +8,13 @@
 
 **Say goodbye to copy-pasting and DSH Token anxiety. Let ChatGPT on the web connect directly to your local project, code on its own, and hand complex tasks to DSH for sustained execution.**
 
+**Supports macOS and Windows x64:** Agent Helm runs local commands natively on Windows without WSL2; delegation still requires DSH to be installed locally.
+
 [![npm](https://img.shields.io/npm/v/@beforewave/dsh-with-chatgpt?color=blue\&style=flat-square)](https://www.npmjs.com/package/@beforewave/dsh-with-chatgpt)
 [![DSH](https://img.shields.io/badge/DeepSeek-Harness-blue?style=flat-square)](#-quick-start)
 [![License](https://img.shields.io/github/license/BeforeWave/dsh-with-chatgpt?style=flat-square)](./LICENSE)
+![macOS](https://img.shields.io/badge/macOS-supported-2ea44f?style=flat-square)
+![Windows](https://img.shields.io/badge/Windows-supported-2ea44f?style=flat-square)
 
 </div>
 
