@@ -13,8 +13,8 @@
 [![npm](https://img.shields.io/npm/v/@beforewave/dsh-with-chatgpt?color=blue\&style=flat-square)](https://www.npmjs.com/package/@beforewave/dsh-with-chatgpt)
 [![DSH](https://img.shields.io/badge/DeepSeek-Harness-blue?style=flat-square)](#-快速开始)
 [![License](https://img.shields.io/github/license/BeforeWave/dsh-with-chatgpt?style=flat-square)](./LICENSE)
-![macOS](https://img.shields.io/badge/macOS-supported-2ea44f?style=flat-square)
-![Windows](https://img.shields.io/badge/Windows-supported-2ea44f?style=flat-square)
+
+![macOS](https://img.shields.io/badge/macOS-supported-2ea44f?style=flat-square) ![Windows](https://img.shields.io/badge/Windows-supported-2ea44f?style=flat-square)
 
 </div>
 
