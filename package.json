@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "@beforewave/agent-helm": "0.1.5",
-    "@anthropic-ai/sandbox-runtime": "^0.0.74",
+    "@anthropic-ai/sandbox-runtime": "^0.0.79",
     "@modelcontextprotocol/sdk": "1.30.0"
   },
   "peerDependencies": {
