@@ -43,6 +43,7 @@ export interface HelmUiStatus {
   externalCapabilities: ExternalCapabilityPolicy
   externalUserAccess: ExternalUserAccess
   effectiveExternalAccess: ExternalUserAccess
+  externalAccessConfigurable?: ExternalUserAccess
 }
 
 export function coreDependencyStatus(health: Record<string, unknown>): HelmUiStatus['dependencies'] {
@@ -231,6 +232,7 @@ export async function resolveHelmUiStatus(
   }
   const userAccess = externalUserAccess(health.externalUserAccess)
   const effectiveAccess = effectiveUiAccess(capabilities, userAccess)
+  const accessConfigurable = externalUserAccess(health.externalAccessConfigurable)
   const daemon = record(health.daemon)
   const lifecycleOwner = typeof daemon.lifecycleOwner === 'string' ? daemon.lifecycleOwner : undefined
   const configurable = Boolean(expectedLifecycleOwner && lifecycleOwner === expectedLifecycleOwner)
@@ -243,5 +245,6 @@ export async function resolveHelmUiStatus(
     externalCapabilities: capabilities,
     externalUserAccess: userAccess,
     effectiveExternalAccess: effectiveAccess,
+    externalAccessConfigurable: accessConfigurable,
   }
 }

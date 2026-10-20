@@ -740,15 +740,15 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       ) : null}
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.understand.icon}</span>{t(capabilityDefinitions.understand.labelKey)}</span>
-                        <StatusSwitch enabled={configuredPolicy.enabled} disabled={pendingTarget !== undefined} label={t('toggleCodeRead')} onChange={(enabled) => { void setExternalUserAccess('enabled', enabled) }} />
+                        <StatusSwitch enabled={configuredPolicy.enabled} disabled={status.externalAccessConfigurable?.enabled === false || pendingTarget !== undefined} label={t('toggleCodeRead')} onChange={(enabled) => { void setExternalUserAccess('enabled', enabled) }} />
                       </div>
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.coding.icon}</span>{t(capabilityDefinitions.coding.labelKey)}</span>
-                        <StatusSwitch enabled={configuredPolicy.mutations} disabled={pendingTarget !== undefined} label={t('toggleCodeWrite')} onChange={(enabled) => { void setExternalUserAccess('mutations', enabled) }} />
+                        <StatusSwitch enabled={effectivePolicy.mutations} disabled={status.externalAccessConfigurable?.mutations === false || pendingTarget !== undefined} label={t('toggleCodeWrite')} onChange={(enabled) => { void setExternalUserAccess('mutations', enabled) }} />
                       </div>
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.command.icon}</span>{t(capabilityDefinitions.command.labelKey)}</span>
-                        <StatusSwitch enabled={configuredPolicy.delegation} disabled={pendingTarget !== undefined} label={t('toggleAgentDelegation')} onChange={(enabled) => { void setExternalUserAccess('delegation', enabled) }} />
+                        <StatusSwitch enabled={configuredPolicy.delegation} disabled={status.externalAccessConfigurable?.delegation === false || pendingTarget !== undefined} label={t('toggleAgentDelegation')} onChange={(enabled) => { void setExternalUserAccess('delegation', enabled) }} />
                       </div>
                     </>
                   )}
