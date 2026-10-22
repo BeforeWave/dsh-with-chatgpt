@@ -12,7 +12,7 @@ import {
   IconWarningOutline16,
   StateDot,
   Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from './primitives.js'
 import type { HelmUiDependencyName, HelmUiRuntimeState, HelmUiStatus } from '../runtime/status.js'
 import { isHelmUiRequestError, type HelmUiAdapter, type HelmExternalCapability } from './adapter.js'
 import { SessionActivityPanel } from './components/session-activity.js'

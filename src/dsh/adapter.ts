@@ -3,7 +3,6 @@ import { realpath } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { installModelSelection, type Agent, type AgentOptions, type ModelSelection, type ModelSelectionRef } from '@deepseek-ai/dsh-agent'
-import { resolveSessionPreset } from '@deepseek-ai/dsh-agent-presets'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
@@ -25,6 +24,17 @@ export interface DshAdapterConfig {
   model?: string
   onWorkspaceUpsert?: (workspace: AdapterWorkspaceRef) => Promise<void>
   onWorkspaceRemove?: (workspaceId: string) => Promise<void>
+}
+
+// DSH 0.2 moved preset selection to the session projection and stopped
+// distributing @deepseek-ai/dsh-agent-presets. The persisted event contract
+// remains stable across 0.1 and 0.2; replay last selection before the header.
+function resolveSessionPreset(session: { header: { agentPreset?: string }; events: readonly SessionEvent[] }): string | undefined {
+  for (let i = session.events.length - 1; i >= 0; i--) {
+    const event = session.events[i]
+    if (event?.type === 'agent-preset/selected') return event.data.agentPreset
+  }
+  return session.header.agentPreset
 }
 
 type Loaded = { agent?: Agent; events: readonly SessionEvent[]; header: unknown }
