@@ -20,8 +20,15 @@ export function IconChevronUpOutline14(props: IconProps): JSX.Element {
 export function IconChevronRightOutline14(props: IconProps): JSX.Element {
   return <Icon size={14} {...props}><path d="m9 6 6 6-6 6" /></Icon>
 }
-export function IconHashOutline16(props: IconProps): JSX.Element {
-  return <Icon size={16} {...props}><path d="M4 9h16M4 15h16M11 4 7 20M17 4l-4 16" /></Icon>
+// Preserve the exact DSH 0.1.1-rc.2 IconCodeOutline16 artwork (#), even
+// when DSH 0.2 does not ship @deepseek-ai/dsh-client-ui-primitives.
+export function IconCodeOutline16({ width = 16, height = 16, ...props }: IconProps): JSX.Element {
+  return <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height}
+    viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+    <path fillRule="evenodd" clipRule="evenodd"
+      d="M12.3368 1.53569L11.931 4.43172H14.8086V5.79673H11.7404L11.1962 9.67859H14.2839V11.0436H11.0056L10.4994 14.6529L9.14873 14.4643L9.62731 11.0436H5.75876L5.25252 14.6529L3.90186 14.4643L4.38043 11.0436H1.69141V9.67859H4.57104L5.11417 5.79673H2.21609V4.43172H5.30581L5.73724 1.34713L7.08995 1.53569L6.68414 4.43172H10.5527L10.9841 1.34713L12.3368 1.53569ZM5.94937 9.67859H9.81791L10.361 5.79673H6.49353L5.94937 9.67859Z"
+      fill="currentColor" />
+  </svg>
 }
 export function IconWarningOutline16(props: IconProps): JSX.Element {
   return <Icon size={16} {...props}><path d="M10.3 4 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0ZM12 9v4m0 4h.01" /></Icon>
