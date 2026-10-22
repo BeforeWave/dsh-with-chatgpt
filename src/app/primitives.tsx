@@ -20,8 +20,8 @@ export function IconChevronUpOutline14(props: IconProps): JSX.Element {
 export function IconChevronRightOutline14(props: IconProps): JSX.Element {
   return <Icon size={14} {...props}><path d="m9 6 6 6-6 6" /></Icon>
 }
-export function IconCodeOutline16(props: IconProps): JSX.Element {
-  return <Icon size={16} {...props}><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 18" /></Icon>
+export function IconHashOutline16(props: IconProps): JSX.Element {
+  return <Icon size={16} {...props}><path d="M4 9h16M4 15h16M11 4 7 20M17 4l-4 16" /></Icon>
 }
 export function IconWarningOutline16(props: IconProps): JSX.Element {
   return <Icon size={16} {...props}><path d="M10.3 4 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0ZM12 9v4m0 4h.01" /></Icon>

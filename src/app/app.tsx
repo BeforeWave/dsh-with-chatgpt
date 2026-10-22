@@ -8,7 +8,7 @@ import {
   IconChevronDownOutline14,
   IconChevronRightOutline14,
   IconChevronUpOutline14,
-  IconCodeOutline16,
+  IconHashOutline16,
   IconWarningOutline16,
   StateDot,
   Tooltip,
@@ -931,7 +931,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
         title={wide ? undefined : t('trigger')}
         onClick={() => setOpen((value) => !value)}
       >
-        <IconCodeOutline16 className="dshHelmIcon" />
+        <IconHashOutline16 className="dshHelmIcon" />
         {wide ? <span className="dshHelmLabel">{t('trigger')}</span> : null}
         {wide ? (
           <span className="dshHelmTriggerCaps" aria-hidden="true">
