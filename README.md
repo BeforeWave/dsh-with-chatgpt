@@ -8,13 +8,13 @@
 
 **告别复制粘贴与 DSH Token 焦虑！让网页版 ChatGPT 直连本地项目、自己动手 Coding，长任务交给 DSH 本地持续执行。**
 
-**支持 macOS 和 Windows x64：** Windows 可通过 Agent Helm 原生执行本地命令，无需 WSL2；委派给 DSH 需要在本机安装 DSH。
+**支持 macOS、Windows x64 和 Linux：** Windows 可通过 Agent Helm 原生执行本地命令，无需 WSL2；委派给 DSH 需要在本机安装 DSH。
 
 [![npm](https://img.shields.io/npm/v/@beforewave/dsh-with-chatgpt?color=blue\&style=flat-square)](https://www.npmjs.com/package/@beforewave/dsh-with-chatgpt)
 [![DSH](https://img.shields.io/badge/DeepSeek-Harness-blue?style=flat-square)](#-快速开始)
 [![License](https://img.shields.io/github/license/BeforeWave/dsh-with-chatgpt?style=flat-square)](./LICENSE)
 
-![macOS](https://img.shields.io/badge/macOS-supported-2ea44f?style=flat-square) ![Windows](https://img.shields.io/badge/Windows-supported-2ea44f?style=flat-square)
+![macOS](https://img.shields.io/badge/macOS-supported-2ea44f?style=flat-square) ![Windows](https://img.shields.io/badge/Windows-supported-2ea44f?style=flat-square) ![Linux](https://img.shields.io/badge/Linux-supported-2ea44f?style=flat-square)
 
 </div>
 
