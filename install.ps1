@@ -14,9 +14,24 @@ $ReleaseToolUrl = if ($env:BEFOREWAVE_RELEASE_TOOL_URL) { $env:BEFOREWAVE_RELEAS
 function Fail([string]$Message) { throw "DSH with ChatGPT installer: $Message" }
 function Stage([int]$Number, [string]$Message) { Write-Host "DSH with ChatGPT [$Number/3] $Message" }
 
+function Resolve-DshLauncher {
+  $dsh = Get-Command dsh -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($null -eq $dsh) { Fail 'dsh is required. Install DSH Desktop/CLI first.' }
+  $launcher = [string]$dsh.Source
+  if ($launcher.EndsWith('.ps1', [StringComparison]::OrdinalIgnoreCase)) {
+    # PowerShell may select the script shim even when its execution policy blocks it.
+    # Use the adjacent native CMD shim from the exact same installation.
+    $cmd = [IO.Path]::ChangeExtension($launcher, '.cmd')
+    if (-not (Test-Path -LiteralPath $cmd -PathType Leaf)) {
+      Fail 'dsh resolves to a blocked PowerShell shim without an adjacent dsh.cmd; reinstall the DSH CLI.'
+    }
+    return $cmd
+  }
+  return $launcher
+}
+
 Stage 1 'DSH host check'
-$dsh = Get-Command dsh -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($null -eq $dsh) { Fail 'dsh is required. Install DSH Desktop/CLI first.' }
+$dshLauncher = Resolve-DshLauncher
 
 $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
 if ($arch -notin @('AMD64', 'x64', 'X64')) { Fail "Windows installer currently supports win32-x64 only; detected $arch" }
@@ -42,7 +57,7 @@ try {
   New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
   $archive = Join-Path $archiveDir 'dsh-with-chatgpt.tgz'
   Move-Item -LiteralPath $download -Destination $archive -Force
-  & $dsh.Source plugin --profile $Profile add $archive
+  & $dshLauncher plugin --profile $Profile add $archive
   if ($LASTEXITCODE -ne 0) { Fail "dsh plugin add failed for GitHub Release $Version" }
 } finally {
   Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
