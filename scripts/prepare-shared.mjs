@@ -6,15 +6,15 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const targetRoot = join(packageRoot, 'src', '__shared')
 const sharedNames = ['ui-contract', 'work-history-ui']
 
-let cursor = packageRoot
-let canonicalRoot
-while (true) {
-  const candidate = join(cursor, 'shared')
-  if (sharedNames.every((name) => existsSync(join(candidate, name)))) { canonicalRoot = candidate; break }
-  const parent = dirname(cursor)
-  if (parent === cursor) break
-  cursor = parent
-}
+// Only the actual monorepo package may link canonical shared sources.
+// An OSS checkout or standalone scratch may be nested anywhere below the
+// monorepo: walking ancestor directories would leak private shared sources
+// and can resolve a second React instance outside its isolated node_modules.
+const repoRoot = resolve(packageRoot, '../..')
+const canonicalRoot = packageRoot === join(repoRoot, 'packages', 'dsh-with-chatgpt')
+  && sharedNames.every((name) => existsSync(join(repoRoot, 'shared', name)))
+  ? join(repoRoot, 'shared')
+  : undefined
 
 if (canonicalRoot) {
   mkdirSync(targetRoot, { recursive: true })

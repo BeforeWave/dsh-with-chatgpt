@@ -9,6 +9,7 @@ param(
   [string]$Version = 'latest',
   [string]$ArtifactId,
   [string]$Field,
+  [string]$FallbackField,
   [string]$Output,
   [string]$ManifestPath
 )
@@ -127,6 +128,12 @@ if ($Command -eq 'field') {
     Fail 'field must be a simple manifest property name'
   }
   $property = $manifest.PSObject.Properties[$Field]
+  if ($null -eq $property -and -not [string]::IsNullOrWhiteSpace($FallbackField)) {
+    if ($FallbackField -notmatch '^[A-Za-z][A-Za-z0-9]*$') {
+      Fail 'fallback field must be a simple manifest property name'
+    }
+    $property = $manifest.PSObject.Properties[$FallbackField]
+  }
   if ($null -eq $property -or $property.Value -isnot [string] -or [string]::IsNullOrWhiteSpace($property.Value)) {
     Fail "release manifest does not contain string field $Field"
   }

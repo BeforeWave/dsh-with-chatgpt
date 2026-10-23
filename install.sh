@@ -38,13 +38,25 @@ mkdir -p "$ARTIFACT_DIR"
 ROOT=$(mktemp -d "${TMPDIR:-/tmp}/dsh-with-chatgpt-release.XXXXXX")
 trap 'rm -rf "$ROOT"' EXIT HUP INT TERM
 DOWNLOAD=$ROOT/dsh-with-chatgpt.tgz
-ARCHIVE=$ARTIFACT_DIR/dsh-with-chatgpt.tgz
 release_tool download \
   --release-url "$RELEASE_URL" \
   --version "$VERSION" \
   --artifact-id dsh-with-chatgpt-package \
   --output "$DOWNLOAD" >/dev/null \
   || fail "Could not download DSH with ChatGPT GitHub Release v$VERSION."
+# pnpm treats a local file dependency as unchanged when its path is unchanged,
+# even if a GitHub re-release replaces the bytes at that path.
+# The shared release tool has already verified the downloaded SHA-256.
+if command -v shasum >/dev/null 2>&1; then
+  CONTENT_SHA=$(shasum -a 256 "$DOWNLOAD" | awk '{print $1}')
+elif command -v sha256sum >/dev/null 2>&1; then
+  CONTENT_SHA=$(sha256sum "$DOWNLOAD" | awk '{print $1}')
+else
+  fail "SHA-256 verification requires shasum or sha256sum."
+fi
+ARCHIVE_DIR="$ARTIFACT_DIR/$CONTENT_SHA"
+ARCHIVE="$ARCHIVE_DIR/dsh-with-chatgpt.tgz"
+mkdir -p "$ARCHIVE_DIR"
 mv -f "$DOWNLOAD" "$ARCHIVE"
 
 dsh plugin --profile "$PROFILE" add "$ARCHIVE"
