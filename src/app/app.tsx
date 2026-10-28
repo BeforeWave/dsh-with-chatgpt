@@ -16,6 +16,7 @@ import {
 import type { HelmUiDependencyName, HelmUiRuntimeState, HelmUiStatus } from '../runtime/status.js'
 import { isHelmUiRequestError, type HelmUiAdapter, type HelmExternalCapability } from './adapter.js'
 import { SessionActivityPanel } from './components/session-activity.js'
+import { McpServers } from './components/mcp-servers.js'
 
 const CSS_ID = '@beforewave/dsh-with-chatgpt/client'
 export const HELM_LOCALE_NS = 'dsh.chatgptHelm' as const
@@ -82,6 +83,7 @@ const css = `
 @media(max-width:900px){.dshHelmTunnelDialogBody{padding:12px}.dshHelmTunnelDialogContent{grid-template-columns:1fr}.dshHelmTunnelDialogErrors{grid-column:1}.dshHelmTunnelDialogAside{gap:12px}}
 .dshHelmTunnelInstall{margin-top:4px;padding:12px;border-radius:9px;background:var(--dsw-alias-interactive-bg-hover);display:flex;flex-direction:column;gap:6px}
 .dshHelmDetails{box-sizing:border-box;padding:10px 11px 11px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
+.dshHelmGroupBody .helm-mcp-manager{--helm-mcp-primary:var(--dsw-alias-label-primary);--helm-mcp-secondary:var(--dsw-alias-label-secondary);--helm-mcp-border:var(--dsw-alias-border-l2);--helm-mcp-border-strong:var(--dsw-alias-border-l3);--helm-mcp-hover:var(--dsw-alias-interactive-bg-hover);--helm-mcp-surface:var(--dsw-specific-menu);--helm-mcp-accent:var(--dsw-alias-state-business-primary);--helm-mcp-error:var(--dsw-alias-state-error-primary)}
 .dshHelmGroupBody{box-sizing:border-box;position:relative;border-bottom:0}
 .dshHelmGroupBody::after{content:"";position:absolute;left:26px;right:8px;bottom:0;border-bottom:1px solid var(--dsw-alias-border-l2);pointer-events:none}
 .dshHelmGroupBody>.dshHelmRow{padding-left:26px}
@@ -187,7 +189,8 @@ export interface ChatGPTHelmAppProps {
 export type HelmPanelProps = ChatGPTHelmAppProps
 
 type HelmIssue = { title: string; detail?: string }
-type HelmUpdateTarget = 'core' | 'localMcp' | 'externalAgentLsp' | 'externalAccess' | 'tunnelSetup'
+type HelmUpdateTarget = 'core' | 'localMcp' | 'nativeAgent' | 'externalAgentLsp' | 'externalAccess' | 'tunnelSetup'
+type CodeSenseSwitch = 'externalAgentLsp' | 'localMcp' | 'codex' | 'claude'
 type HelmCapabilitySummaryItem = { icon: string; label: string }
 
 function requestErrorDetail(cause: unknown, t: HelmTranslate): string {
@@ -442,11 +445,11 @@ function StatusRow({ name, nameExtra, description, management = false, toggleOnN
         {description ? (
           <Tooltip label={description} side="top" delayMs={0} maxWidth={260}>
             <span className="dshHelmTooltipTarget" tabIndex={0}>
-              {nameClick ? <Button variant="ghost" size="sm" className="dshHelmNameButton" data-management={management || undefined} aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button> : <span className="dshHelmName">{name}</span>}
+              {nameClick ? <Button variant="ghost" size="sm" className="dshHelmNameButton" style={{ padding: 0, border: 0 }} data-management={management || undefined} aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button> : <span className="dshHelmName">{name}</span>}
             </span>
           </Tooltip>
         ) : nameClick ? (
-          <Button variant="ghost" size="sm" className="dshHelmNameButton" aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button>
+          <Button variant="ghost" size="sm" className="dshHelmNameButton" style={{ padding: 0, border: 0 }} aria-expanded={!onNameClick && expandable ? expanded : undefined} aria-controls={!onNameClick && expandable ? detailsId : undefined} onClick={onNameButtonClick}>{name}</Button>
         ) : (
           <span className="dshHelmName">{name}</span>
         )}
@@ -487,10 +490,14 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [status, setStatus] = useState<HelmUiStatus | undefined>()
   const [error, setError] = useState<{ target: 'status' | HelmUpdateTarget | 'codeRead' | 'codeWrite' | 'agentDelegation' | 'serena' | 'tunnelClient'; detail: string }>()
   const [pendingTarget, setPendingTarget] = useState<HelmUpdateTarget>()
+  const [pendingCodeSense, setPendingCodeSense] = useState<Partial<Record<CodeSenseSwitch, boolean>>>({})
+  // Keep the other switches usable while serializing their state writes.
+  const codeSenseUpdates = useRef<Promise<void>>(Promise.resolve())
+  const codeSenseBusy = Object.values(pendingCodeSense).some(Boolean)
   const [pendingInstall, setPendingInstall] = useState<HelmUiDependencyName>()
   const [confirmCoreOff, setConfirmCoreOff] = useState(false)
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false)
-  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'codeSense' | undefined>()
+  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'codeSense' | 'mcpServers' | undefined>()
   const [tunnelPanelOpen, setTunnelPanelOpen] = useState(false)
   const [tunnelId, setTunnelId] = useState('')
   const [organizationId, setOrganizationId] = useState('')
@@ -587,32 +594,37 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
-  const setEnabled = async (target: 'core' | 'localMcp', enabled: boolean) => {
-    setPendingTarget(target)
+  const setEnabled = async (enabled: boolean) => {
+    setPendingTarget('core')
     try {
-      const next = target === 'core'
-        ? await adapter.setCoreEnabled(enabled)
-        : await adapter.setLocalMcpEnabled(enabled)
-      setStatus(next)
+      setStatus(await adapter.setCoreEnabled(enabled))
       setError(undefined)
       setConfirmCoreOff(false)
     } catch (cause) {
-      setError({ target, detail: requestErrorDetail(cause, t) })
+      setError({ target: 'core', detail: requestErrorDetail(cause, t) })
     } finally {
       setPendingTarget(undefined)
     }
   }
 
-  const setExternalAgentLspEnabled = async (enabled: boolean) => {
-    setPendingTarget('externalAgentLsp')
-    try {
-      setStatus(await adapter.setExternalAgentLspEnabled(enabled))
-      setError(undefined)
-    } catch (cause) {
-      setError({ target: 'externalAgentLsp', detail: requestErrorDetail(cause, t) })
-    } finally {
-      setPendingTarget(undefined)
-    }
+  const setCodeSenseEnabled = (target: CodeSenseSwitch, enabled: boolean) => {
+    setPendingCodeSense((current) => ({ ...current, [target]: true }))
+    const update = codeSenseUpdates.current.then(async () => {
+      try {
+        const next = target === 'externalAgentLsp'
+          ? await adapter.setExternalAgentLspEnabled(enabled)
+          : target === 'localMcp'
+            ? await adapter.setLocalMcpEnabled(enabled)
+            : await adapter.setNativeAgentEnabled(target, enabled)
+        setStatus(next)
+        setError(undefined)
+      } catch (cause) {
+        setError({ target: target === 'codex' || target === 'claude' ? 'nativeAgent' : target, detail: requestErrorDetail(cause, t) })
+      } finally {
+        setPendingCodeSense((current) => ({ ...current, [target]: false }))
+      }
+    })
+    codeSenseUpdates.current = update
   }
 
   const setExternalUserAccess = async (capability: HelmExternalCapability, enabled: boolean) => {
@@ -658,7 +670,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
-  const toggleRow = (row: 'capabilities' | 'codeSense') => {
+  const toggleRow = (row: 'capabilities' | 'codeSense' | 'mcpServers') => {
     setExpandedRow((current) => current === row ? undefined : row)
   }
   const tunnelManagementUrl = status?.tunnel.state === 'running' ? status.tunnel.adminUrl : undefined
@@ -740,15 +752,15 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       ) : null}
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.understand.icon}</span>{t(capabilityDefinitions.understand.labelKey)}</span>
-                        <StatusSwitch enabled={configuredPolicy.enabled} disabled={status.externalAccessConfigurable?.enabled === false || pendingTarget !== undefined} label={t('toggleCodeRead')} onChange={(enabled) => { void setExternalUserAccess('enabled', enabled) }} />
+                        <StatusSwitch enabled={configuredPolicy.enabled} disabled={status.externalAccessConfigurable?.enabled === false || pendingTarget !== undefined || codeSenseBusy} label={t('toggleCodeRead')} onChange={(enabled) => { void setExternalUserAccess('enabled', enabled) }} />
                       </div>
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.coding.icon}</span>{t(capabilityDefinitions.coding.labelKey)}</span>
-                        <StatusSwitch enabled={effectivePolicy.mutations} disabled={status.externalAccessConfigurable?.mutations === false || pendingTarget !== undefined} label={t('toggleCodeWrite')} onChange={(enabled) => { void setExternalUserAccess('mutations', enabled) }} />
+                        <StatusSwitch enabled={effectivePolicy.mutations} disabled={status.externalAccessConfigurable?.mutations === false || pendingTarget !== undefined || codeSenseBusy} label={t('toggleCodeWrite')} onChange={(enabled) => { void setExternalUserAccess('mutations', enabled) }} />
                       </div>
                       <div className="dshHelmSubRow">
                         <span className="dshHelmSubName"><span className="dshHelmSubIcon" aria-hidden="true">{capabilityDefinitions.command.icon}</span>{t(capabilityDefinitions.command.labelKey)}</span>
-                        <StatusSwitch enabled={configuredPolicy.delegation} disabled={status.externalAccessConfigurable?.delegation === false || pendingTarget !== undefined} label={t('toggleAgentDelegation')} onChange={(enabled) => { void setExternalUserAccess('delegation', enabled) }} />
+                        <StatusSwitch enabled={configuredPolicy.delegation} disabled={status.externalAccessConfigurable?.delegation === false || pendingTarget !== undefined || codeSenseBusy} label={t('toggleAgentDelegation')} onChange={(enabled) => { void setExternalUserAccess('delegation', enabled) }} />
                       </div>
                     </>
                   )}
@@ -773,23 +785,37 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                         <span className="dshHelmSubName">{t('externalAgentLsp')}</span>
                         <StatusSwitch
                           enabled={!serenaUnavailable && status.externalAgentLsp.enabled}
-                          disabled={serenaUnavailable || status.core.state !== 'running' || !status.externalAgentLsp.configurable || pendingTarget !== undefined}
+                          disabled={serenaUnavailable || status.core.state !== 'running' || !status.externalAgentLsp.configurable || pendingTarget !== undefined || Boolean(pendingCodeSense.externalAgentLsp)}
                           label={t('toggleExternalAgentLsp')}
-                          onChange={(enabled) => { void setExternalAgentLspEnabled(enabled) }}
+                          onChange={(enabled) => { setCodeSenseEnabled('externalAgentLsp', enabled) }}
                         />
                       </div>
                       <div className="dshHelmSubRow">
-                        <span className="dshHelmSubName">{t('localMcp')}</span>
+                        <span className="dshHelmSubName">DSH</span>
                         <StatusSwitch
                           enabled={!serenaUnavailable && status.localMcp.state === 'running'}
-                          disabled={serenaUnavailable || status.core.state !== 'running' || pendingTarget !== undefined}
+                          disabled={serenaUnavailable || status.core.state !== 'running' || pendingTarget !== undefined || Boolean(pendingCodeSense.localMcp)}
                           label={t('toggleLocalMcp')}
-                          onChange={(enabled) => { void setEnabled('localMcp', enabled) }}
+                          onChange={(enabled) => { setCodeSenseEnabled('localMcp', enabled) }}
                         />
                       </div>
-                      {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'externalAgentLsp' || status.dependencies.serena.state === 'unavailable' || status.localMcp.state === 'unavailable' || status.localMcp.message ? (
+                      {(['codex', 'claude'] as const).map((agent) => {
+                        const native = status.nativeAgents?.[agent]
+                        return (
+                          <div className="dshHelmSubRow" key={agent}>
+                            <span className="dshHelmSubName" title={native?.message ?? (native?.installed === false ? 'Not installed' : native?.installed === undefined ? 'Restart Agent Helm Core to detect local agents' : undefined)}>{agent === 'codex' ? 'Codex' : 'Claude Code'}{native?.installed === false ? ' (not installed)' : native?.installed === undefined ? ' (Core update required)' : ''}</span>
+                            <StatusSwitch
+                              enabled={!serenaUnavailable && Boolean(native?.enabled)}
+                              disabled={serenaUnavailable || status.core.state !== 'running' || !native?.installed || pendingTarget !== undefined || Boolean(pendingCodeSense[agent])}
+                              label={agent === 'codex' ? 'Toggle Codex Code Sense' : 'Toggle Claude Code Code Sense'}
+                              onChange={(enabled) => { setCodeSenseEnabled(agent, enabled) }}
+                            />
+                          </div>
+                        )
+                      })}
+                      {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'nativeAgent' || error?.target === 'externalAgentLsp' || status.dependencies.serena.state === 'unavailable' || status.localMcp.state === 'unavailable' || status.localMcp.message ? (
                         <div className="dshHelmDetails">
-                          {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'externalAgentLsp' ? <p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p> : null}
+                          {error?.target === 'serena' || error?.target === 'localMcp' || error?.target === 'nativeAgent' || error?.target === 'externalAgentLsp' ? <p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p> : null}
                           {status.dependencies.serena.state === 'unavailable' ? (
                             <>
                               <p className="dshHelmDetailsText" data-error="true">{status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription')}</p>
@@ -810,7 +836,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                   control={<ExpandChevron expanded={expandedRow === 'codeSense'} />}
                   issue={error?.target === 'serena'
                     ? { title: t('serenaDependencyIssue'), detail: error.detail }
-                    : error?.target === 'externalAgentLsp' || error?.target === 'localMcp'
+                    : error?.target === 'externalAgentLsp' || error?.target === 'localMcp' || error?.target === 'nativeAgent'
                       ? { title: t('settingUpdateIssue'), detail: error.detail }
                       : status.dependencies.serena.state === 'unavailable'
                         ? { title: t('serenaDependencyIssue'), detail: status.dependencies.serena.installCommand ? t('serenaInstallDescription') : t('serenaManualDescription') }
@@ -818,29 +844,42 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                           ? { title: t('localMcpIssue'), detail: t('localMcpIssueDetails') }
                           : undefined}
                 />
-                      <StatusRow
-                        name={t('tunnel')}
-                        nameExtra={<span className="dshHelmInlineState" role="img" aria-label={t(stateKey(status.tunnel.state))}><StateDot state={dotState(status.tunnel.state)} size={8} /></span>}
-                        description={tunnelManagementUrl ? t('tunnelManagementDescription') : undefined}
-                        management={Boolean(tunnelManagementUrl)}
-                        wholeRow
-                        toggleOnName={false}
-                        state={status.tunnel.state}
-                        t={t}
-                        onNameClick={tunnelManagementUrl ? () => openUrl(tunnelManagementUrl) : undefined}
-                        onToggle={openTunnelPanel}
-                        onIssueClick={openTunnelPanel}
-                        control={(
-                          <span className="dshHelmTunnelControl">
-                            <Tooltip label={t(tunnelOnboardingSource.title.key)} side="top" delayMs={0} maxWidth={220}>
-                              <button type="button" className="dshHelmTunnelConfig" aria-label={t(tunnelOnboardingSource.title.key)} aria-expanded={tunnelPanelOpen} aria-controls="dshHelmTunnelSetupDialog" onClick={(event) => { event.stopPropagation(); openTunnelPanel() }}>
-                                <IconChevronRightOutline14 />
-                              </button>
-                            </Tooltip>
-                          </span>
-                        )}
-                        issue={tunnelIssueInfo}
-                      />
+                <StatusRow
+                  name={t('mcpServers')}
+                  state="running"
+                  t={t}
+                  wholeRow
+                  toggleOnName={false}
+                  onToggle={() => toggleRow('mcpServers')}
+                  expanded={expandedRow === 'mcpServers'}
+                  detailsId="dshHelmMcpServers"
+                  detailsClassName="dshHelmGroupBody"
+                  details={expandedRow === 'mcpServers' ? <McpServers adapter={adapter} t={t} disabled={status.core.state !== 'running'} /> : undefined}
+                  control={<ExpandChevron expanded={expandedRow === 'mcpServers'} />}
+                />
+                <StatusRow
+                  name={t('tunnel')}
+                  nameExtra={<span className="dshHelmInlineState" role="img" aria-label={t(stateKey(status.tunnel.state))}><StateDot state={dotState(status.tunnel.state)} size={8} /></span>}
+                  description={tunnelManagementUrl ? t('tunnelManagementDescription') : undefined}
+                  management={Boolean(tunnelManagementUrl)}
+                  wholeRow
+                  toggleOnName={false}
+                  state={status.tunnel.state}
+                  t={t}
+                  onNameClick={tunnelManagementUrl ? () => openUrl(tunnelManagementUrl) : undefined}
+                  onToggle={openTunnelPanel}
+                  onIssueClick={openTunnelPanel}
+                  control={(
+                    <span className="dshHelmTunnelControl">
+                      <Tooltip label={t(tunnelOnboardingSource.title.key)} side="top" delayMs={0} maxWidth={220}>
+                        <button type="button" className="dshHelmTunnelConfig" aria-label={t(tunnelOnboardingSource.title.key)} aria-expanded={tunnelPanelOpen} aria-controls="dshHelmTunnelSetupDialog" onClick={(event) => { event.stopPropagation(); openTunnelPanel() }}>
+                          <IconChevronRightOutline14 />
+                        </button>
+                      </Tooltip>
+                    </span>
+                  )}
+                  issue={tunnelIssueInfo}
+                />
                 <button type="button" className="dshHelmRow dshHelmSessionEntry" onClick={() => { setOpen(false); setSessionPanelOpen(true) }}>
                   <span className="dshHelmSessionEntryTitle">{t('sessionActivityEntry')}</span>
                   <span className="dshHelmSessionEntryArrow" aria-hidden="true"><IconChevronRightOutline14 /></span>
@@ -854,11 +893,11 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                     control={(
                       <StatusSwitch
                         enabled={status.core.enabled ?? status.core.state === 'running'}
-                        disabled={status.core.configurable === false || status.core.state === 'unavailable' || pendingTarget !== undefined}
+                        disabled={status.core.configurable === false || status.core.state === 'unavailable' || pendingTarget !== undefined || codeSenseBusy}
                         label={t('toggleCore')}
                         onChange={(enabled) => {
                           if (!enabled) setConfirmCoreOff(true)
-                          else void setEnabled('core', true)
+                          else void setEnabled(true)
                         }}
                       />
                     )}
@@ -873,7 +912,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                       <p className="dshHelmConfirmText">{t('coreShutdownWarning')}</p>
                       <div className="dshHelmConfirmActions">
                         <Button variant="outline" size="sm" onClick={() => setConfirmCoreOff(false)}>{t('cancel')}</Button>
-                        <Button variant="primary" size="sm" onClick={() => { setConfirmCoreOff(false); void setEnabled('core', false) }}>{t('confirmShutdown')}</Button>
+                        <Button variant="primary" size="sm" onClick={() => { setConfirmCoreOff(false); void setEnabled(false) }}>{t('confirmShutdown')}</Button>
                       </div>
                     </div>
                   ) : null}

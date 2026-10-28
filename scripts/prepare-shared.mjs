@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const targetRoot = join(packageRoot, 'src', '__shared')
-const sharedNames = ['ui-contract', 'work-history-ui']
+const sharedNames = ['ui-contract', 'work-history-ui', 'mcp-servers-ui']
 
 // Only the actual monorepo package may link canonical shared sources.
 // An OSS checkout or standalone scratch may be nested anywhere below the

@@ -35,6 +35,7 @@ export interface HelmUiStatus {
     url?: string
     message?: string
   }
+  nativeAgents: Record<'codex' | 'claude', { installed?: boolean; enabled: boolean; configured: boolean; message?: string }>
   externalAgentLsp: {
     state: HelmUiRuntimeState
     enabled: boolean
@@ -189,6 +190,7 @@ export async function resolveHelmUiStatus(
       dependencies: unavailableDependencies,
       tunnel: { state: 'unavailable' },
       localMcp: { state: 'unavailable' },
+      nativeAgents: { codex: { enabled: false, configured: false }, claude: { enabled: false, configured: false } },
       externalAgentLsp: { state: 'unavailable', enabled: false, configurable: false },
       externalCapabilities: { ...DEFAULT_EXTERNAL_CAPABILITIES },
       externalUserAccess: { enabled: false, mutations: false, delegation: false },
@@ -205,6 +207,7 @@ export async function resolveHelmUiStatus(
       dependencies: unavailableDependencies,
       tunnel: { state: 'unavailable' },
       localMcp: { state: 'unavailable' },
+      nativeAgents: { codex: { enabled: false, configured: false }, claude: { enabled: false, configured: false } },
       externalAgentLsp: { state: 'unavailable', enabled: false, configurable: false },
       externalCapabilities: { ...DEFAULT_EXTERNAL_CAPABILITIES },
       externalUserAccess: { enabled: false, mutations: false, delegation: false },
@@ -241,6 +244,15 @@ export async function resolveHelmUiStatus(
     dependencies,
     tunnel: coreTunnelStatus(health),
     localMcp: localMcpStatus(health, bridge),
+    nativeAgents: Object.fromEntries((['codex', 'claude'] as const).map((id) => {
+      const data = record(record(health.nativeAgents)[id])
+      return [id, {
+        ...(typeof data.installed === 'boolean' ? { installed: data.installed } : {}),
+        enabled: health.status !== 'disabled' && data.enabled === true,
+        configured: data.configured === true,
+        ...(stringValue(data.message) ? { message: stringValue(data.message) } : {}),
+      }]
+    })) as HelmUiStatus['nativeAgents'],
     externalAgentLsp,
     externalCapabilities: capabilities,
     externalUserAccess: userAccess,

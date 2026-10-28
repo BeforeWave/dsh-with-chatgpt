@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
 import type { ChatGPTHelmRuntime } from '../runtime/runtime.js'
-import { HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH, handleHelmApiRequest } from '../runtime/http.js'
+import { HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH, HELM_MCP_SERVERS_PATH, handleHelmApiRequest } from '../runtime/http.js'
 
 export interface StandaloneHostOptions {
   host?: string
@@ -65,7 +65,7 @@ export class StandaloneHost {
     const server = createServer(async (req, res) => {
       try {
         const pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
-        const isHelmApi = pathname === HELM_UI_STATUS_PATH || pathname === HELM_SESSION_API_PATH || pathname.startsWith(`${HELM_SESSION_API_PATH}/`)
+        const isHelmApi = pathname === HELM_UI_STATUS_PATH || pathname === HELM_MCP_SERVERS_PATH || pathname === HELM_SESSION_API_PATH || pathname.startsWith(`${HELM_SESSION_API_PATH}/`)
         if (isHelmApi) {
           const token = typeof req.headers['x-agent-helm-standalone-token'] === 'string' ? req.headers['x-agent-helm-standalone-token'] : ''
           if (!secureEquals(token, this.#accessToken)) {

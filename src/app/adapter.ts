@@ -1,15 +1,25 @@
-import type { ChatSessionSummary, ChatSessionSummaryPage, ChatSessionTimelineItem } from '@beforewave/agent-helm'
+export type OAuthClientSetup = { grantType: 'authorization_code' | 'client_credentials'; clientId?: string; clientSecret?: string; clientMetadataUrl?: string; scope?: string }
+import type { ChatSessionSummary, ChatSessionSummaryPage, ChatSessionTimelineItem, ExternalMcpPublicServer, ExternalMcpScanResult } from '@beforewave/agent-helm'
 import type { TunnelSetupValues } from '../ui-contract.js'
 import type { HelmUiDependencyName, HelmUiStatus } from '../runtime/status.js'
 
 export type HelmExternalCapability = 'enabled' | 'mutations' | 'delegation'
 
 export interface HelmStatusAdapter {
+  listMcpServers(): Promise<ExternalMcpPublicServer[]>
+  scanMcpServers(): Promise<ExternalMcpScanResult>
+  importMcpServer(id: string): Promise<ExternalMcpPublicServer[]>
+  configureMcpServerEnv(id: string, values: Record<string, string>): Promise<ExternalMcpPublicServer[]>
+  configureMcpHttpHeaders(id: string, headers: Record<string, string>): Promise<ExternalMcpPublicServer[]>
+  configureMcpOAuth(id: string, options: OAuthClientSetup): Promise<ExternalMcpPublicServer[]>
+  authorizeMcpServer(id: string): Promise<{ authorizationUrl?: string }>
+  setMcpServerEnabled(id: string, enabled: boolean): Promise<ExternalMcpPublicServer[]>
   getStatus(): Promise<HelmUiStatus>
   installDependency(dependency: HelmUiDependencyName): Promise<HelmUiStatus>
   configureTunnel(input: TunnelSetupValues): Promise<HelmUiStatus>
   setCoreEnabled(enabled: boolean): Promise<HelmUiStatus>
   setLocalMcpEnabled(enabled: boolean): Promise<HelmUiStatus>
+  setNativeAgentEnabled(agent: 'codex' | 'claude', enabled: boolean): Promise<HelmUiStatus>
   setExternalAgentLspEnabled(enabled: boolean): Promise<HelmUiStatus>
   setExternalUserAccess(capability: HelmExternalCapability, enabled: boolean): Promise<HelmUiStatus>
   openUrl(url: string): void
@@ -276,10 +286,19 @@ function subscribeTimelineStreamWithFetch(
 
 export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): HelmUiAdapter {
   const statusUrl = `${baseUrl}${STATUS_PATH}`
+  const mcpUrl = baseUrl + '/api/dsh-with-chatgpt/mcp-servers'
   const sessionUrl = `${baseUrl}${SESSION_PATH}`
   const extraHeaders = accessToken ? { 'x-agent-helm-standalone-token': accessToken } : {}
   const request = async <T,>(url: string, init?: RequestInit): Promise<T> => await requestJson<T>(url, init, extraHeaders)
   return {
+    async listMcpServers() { return await request<ExternalMcpPublicServer[]>(mcpUrl) },
+    async scanMcpServers() { return await request<ExternalMcpScanResult>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'scan' }) }) },
+    async importMcpServer(id) { return await request<ExternalMcpPublicServer[]>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'import', id }) }) },
+    async configureMcpServerEnv(id, values) { return await request<ExternalMcpPublicServer[]>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'configureEnv', id, values }) }) },
+    async configureMcpHttpHeaders(id, headers) { return await request<ExternalMcpPublicServer[]>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'configureHeaders', id, headers }) }) },
+    async configureMcpOAuth(id, options) { return await request<ExternalMcpPublicServer[]>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'configureOAuth', id, options }) }) },
+    async authorizeMcpServer(id) { return await request<{ authorizationUrl?: string }>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'authorize', id }) }) },
+    async setMcpServerEnabled(id, enabled) { return await request<ExternalMcpPublicServer[]>(mcpUrl, { method: 'POST', body: JSON.stringify({ action: 'enable', id, enabled }) }) },
     async getStatus() {
       return await request<HelmUiStatus>(statusUrl)
     },
@@ -327,6 +346,12 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
       return await request<HelmUiStatus>(statusUrl, {
         method: 'POST',
         body: JSON.stringify({ target: 'localMcp', enabled }),
+      })
+    },
+    async setNativeAgentEnabled(agent, enabled) {
+      return await request<HelmUiStatus>(statusUrl, {
+        method: 'POST',
+        body: JSON.stringify({ target: 'nativeAgent', agent, enabled }),
       })
     },
     async setExternalAgentLspEnabled(enabled) {

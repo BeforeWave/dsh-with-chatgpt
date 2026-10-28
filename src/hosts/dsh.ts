@@ -15,6 +15,8 @@ import { LocalMcpBridge } from '../dsh/local-mcp.js'
 import {
   ChatGPTHelmRuntime,
   HELM_SESSION_API_PATH,
+  HELM_MCP_SERVERS_PATH,
+  handleHelmMcpServersRequest,
   HELM_UI_STATUS_PATH,
   handleHelmSessionRequest,
   handleHelmStatusRequest,
@@ -125,6 +127,11 @@ export function registerDshRuntimeRoutes(ctx: Context, runtime: ChatGPTHelmRunti
     path: HELM_UI_STATUS_PATH,
     handler: async (req, res) => await handleHelmStatusRequest(runtime, req, res),
   })
+  const disposeMcp = ctx.webServer.register({
+    kind: 'exact',
+    path: HELM_MCP_SERVERS_PATH,
+    handler: async (req, res) => await handleHelmMcpServersRequest(runtime, req, res),
+  })
   const disposeSessions = ctx.webServer.register({
     kind: 'prefix',
     path: HELM_SESSION_API_PATH,
@@ -132,6 +139,7 @@ export function registerDshRuntimeRoutes(ctx: Context, runtime: ChatGPTHelmRunti
   })
   return () => {
     disposeSessions()
+    disposeMcp()
     disposeStatus()
   }
 }

@@ -300,6 +300,20 @@ export class ChatGPTHelmRuntime {
     return await this.getStatus()
   }
 
+  async setNativeAgentEnabled(agent: 'codex' | 'claude', enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {
+    await this.rpc.setNativeAgentEnabled(agent, enabled)
+    return await this.getStatus()
+  }
+
+  async listMcpServers() { return await this.rpc.listExternalMcpServers() }
+  async scanMcpServers() { return await this.rpc.scanExternalMcpServers() }
+  async importMcpServer(id: string) { return await this.rpc.importExternalMcpServer(id) }
+  async configureMcpServerEnv(id: string, values: Record<string, string>) { return await this.rpc.configureExternalMcpEnv(id, values) }
+  async configureMcpHttpHeaders(id: string, headers: Record<string, string>) { return await this.rpc.configureExternalMcpHttpHeaders(id, headers) }
+  async configureMcpOAuth(id: string, options: import('../app/adapter.js').OAuthClientSetup) { return await this.rpc.configureExternalMcpOAuth(id, options) }
+  async beginMcpServerOAuth(id: string) { return await this.rpc.beginExternalMcpOAuth(id) }
+  async setMcpServerEnabled(id: string, enabled: boolean) { return await this.rpc.setExternalMcpEnabled(id, enabled) }
+
   async setExternalAgentLspEnabled(enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {
     await this.rpc.setExternalAgentLspEnabled(enabled)
     return await this.getStatus()

@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { ChatGPTHelmRuntime } from './runtime.js'
 
 export const HELM_UI_STATUS_PATH = '/api/dsh-with-chatgpt/status'
+export const HELM_MCP_SERVERS_PATH = '/api/dsh-with-chatgpt/mcp-servers'
 export const HELM_SESSION_API_PATH = '/api/dsh-with-chatgpt/sessions'
 
 function json(res: ServerResponse, code: number, value: unknown): void {
@@ -76,6 +77,47 @@ function sessionRouteParts(req: IncomingMessage): string[] {
   return pathname.slice(HELM_SESSION_API_PATH.length + 1).split('/').filter(Boolean).map((part) => decodeURIComponent(part))
 }
 
+export async function handleHelmMcpServersRequest(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  try {
+    if (req.method === 'GET') return json(res, 200, await runtime.listMcpServers())
+    if (req.method === 'POST') {
+      const body = await readJson(req)
+      if (body.action === 'scan') return json(res, 200, await runtime.scanMcpServers())
+      if (body.action === 'import') {
+        if (typeof body.id !== 'string' || !/^(?:codex|claude):[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(body.id)) throw new Error('invalid MCP candidate id')
+        return json(res, 200, await runtime.importMcpServer(body.id))
+      }
+      if (body.action === 'configureEnv') {
+        if (typeof body.id !== 'string' || !/^mcp:[a-f0-9-]{36}$/.test(body.id)
+          || !body.values || typeof body.values !== 'object' || Array.isArray(body.values)) throw new Error('invalid MCP environment configuration')
+        return json(res, 200, await runtime.configureMcpServerEnv(body.id, body.values as Record<string, string>))
+      }
+      if (body.action === 'configureHeaders') {
+        if (typeof body.id !== 'string' || !/^mcp:[a-f0-9-]{36}$/.test(body.id)
+          || !body.headers || typeof body.headers !== 'object' || Array.isArray(body.headers)) throw new Error('Invalid MCP Headers')
+        return json(res, 200, await runtime.configureMcpHttpHeaders(body.id, body.headers as Record<string, string>))
+      }
+      if (body.action === 'configureOAuth') {
+        if (typeof body.id !== 'string' || !/^mcp:[a-f0-9-]{36}$/.test(body.id) || !body.options || typeof body.options !== 'object' || Array.isArray(body.options)) throw new Error('Invalid OAuth configuration')
+        return json(res, 200, await runtime.configureMcpOAuth(body.id, body.options as import('../app/adapter.js').OAuthClientSetup))
+      }
+      if (body.action === 'authorize') {
+        if (typeof body.id !== 'string' || !/^mcp:[a-f0-9-]{36}$/.test(body.id)) throw new Error('invalid MCP authorization id')
+        return json(res, 200, await runtime.beginMcpServerOAuth(body.id))
+      }
+      if (body.action === 'enable') {
+        if (typeof body.id !== 'string' || !/^mcp:[a-f0-9-]{36}$/.test(body.id) || typeof body.enabled !== 'boolean') throw new Error('invalid Helm MCP update')
+        return json(res, 200, await runtime.setMcpServerEnabled(body.id, body.enabled))
+      }
+      throw new Error('unknown MCP management action')
+    }
+    res.setHeader('allow', 'GET, POST')
+    return json(res, 405, { error: 'method not allowed' })
+  } catch (error) {
+    return json(res, 400, { error: error instanceof Error ? error.message : String(error) })
+  }
+}
+
 export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method === 'GET') {
     try {
@@ -111,6 +153,12 @@ export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: 
           ...(typeof values.apiKey === 'string' ? { apiKey: values.apiKey } : {}),
           ...(typeof values.proxyUrl === 'string' ? { proxyUrl: values.proxyUrl } : {}),
         }))
+        return
+      }
+      if (body.target === 'nativeAgent') {
+        if (body.agent !== 'codex' && body.agent !== 'claude') throw new Error('agent must be codex or claude')
+        if (typeof body.enabled !== 'boolean') throw new Error('enabled must be boolean')
+        json(res, 200, await runtime.setNativeAgentEnabled(body.agent, body.enabled))
         return
       }
       if (body.target === 'externalAgentLsp') {
@@ -189,6 +237,10 @@ export async function handleHelmApiRequest(runtime: ChatGPTHelmRuntime, req: Inc
   const pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
   if (pathname === HELM_UI_STATUS_PATH) {
     await handleHelmStatusRequest(runtime, req, res)
+    return true
+  }
+  if (pathname === HELM_MCP_SERVERS_PATH) {
+    await handleHelmMcpServersRequest(runtime, req, res)
     return true
   }
   if (pathname === HELM_SESSION_API_PATH || pathname.startsWith(`${HELM_SESSION_API_PATH}/`)) {
