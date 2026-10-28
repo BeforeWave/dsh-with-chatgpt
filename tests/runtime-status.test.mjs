@@ -92,4 +92,7 @@ test('legacy Core health keeps ChatGPT Code Sense default-on while the new runti
   assert.equal(status.externalAgentLsp.enabled, true)
   assert.equal(status.externalAgentLsp.configurable, false)
   assert.equal(status.externalAgentLsp.state, 'unavailable')
+  assert.equal(status.nativeAgents.codex.installed, undefined, 'older Core provides no installation evidence')
+  assert.equal(status.nativeAgents.claude.installed, undefined, 'older Core provides no installation evidence')
+  assert.equal(status.nativeAgents.codex.enabled, false)
 })

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import { apply } from '../lib/index.js'
-import { ChatGPTHelmRuntime, HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH } from '../lib/runtime/index.js'
+import { ChatGPTHelmRuntime, HELM_MCP_SERVERS_PATH, HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH } from '../lib/runtime/index.js'
 
 function deadSocket() {
   return join(tmpdir(), `agent-helm-dsh-unavailable-${randomUUID()}.sock`)
@@ -71,7 +71,7 @@ test('DSH keeps Agent Helm status routes registered when external Core is unavai
 
   await apply(ctx, externalConfig(deadSocket()))
 
-  assert.deepEqual(routes.map((route) => route.path).sort(), [HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH].sort())
+  assert.deepEqual(routes.map((route) => route.path).sort(), [HELM_MCP_SERVERS_PATH, HELM_SESSION_API_PATH, HELM_UI_STATUS_PATH].sort())
   assert.ok(warnings.some((message) => message.includes('Agent Helm Core is unavailable during startup')))
   assert.equal(typeof cleanup, 'function')
   await cleanup()

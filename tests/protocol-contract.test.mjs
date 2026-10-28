@@ -9,7 +9,7 @@ const localMcp = read('../src/dsh/local-mcp.ts')
 const http = read('../src/runtime/http.ts')
 
 const expectedCoreMethods = [
-  'configureTunnel', 'getChatSessionActivity', 'getChatSessionDelegations', 'getChatSessionSummary',
+  'configureExternalMcpEnv', 'configureTunnel', 'importExternalMcpServer', 'listExternalMcpServers', 'scanExternalMcpServers', 'setExternalMcpEnabled', 'getChatSessionActivity', 'getChatSessionDelegations', 'getChatSessionSummary',
   'getChatSessionTimeline', 'getChatSessionTimelineUpdates', 'getLocalMcpConnection', 'installDependency', 'listChatSessionSummaryPage',
   'reconcile', 'releaseChatSessionTimelineTail', 'setCoreEnabled', 'setExternalUserAccess', 'setLocalMcpEnabled', 'shutdownDaemon', 'supervisorHealth',
 ]
@@ -19,7 +19,7 @@ test('DSH Core RPC method paths stay on the frozen entry contract', () => {
   const methods = [...new Set([...source.matchAll(/\brpc\.([A-Za-z0-9_]+)\s*\(/g)]
     .map((match) => match[1])
     .filter((method) => expectedCoreMethods.includes(method)))].sort()
-  assert.deepEqual(methods, expectedCoreMethods)
+  assert.deepEqual(methods, [...expectedCoreMethods].sort())
 })
 
 test('DSH entry endpoint paths stay stable', () => {
