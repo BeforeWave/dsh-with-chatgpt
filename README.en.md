@@ -104,6 +104,14 @@ Once setup is complete, return to `chatgpt.com` and start working directly with 
 
 ---
 
+### Refresh ChatGPT Connector Tools After Upgrading
+
+This **MCP Server Integration** release changes Agent Helm Core's MCP Tool Schema, replacing `external_mcp_search_tools` with `external_mcp_list_tools`. **After upgrading and restarting Core, select Refresh Tools in your ChatGPT Custom Connector.**
+
+If a tool is missing or its parameters or contract no longer match, verify the Core version and refresh. See the [Agent Helm upgrade guide](https://github.com/BeforeWave/agent-helm#refresh-chatgpt-connector-tools-after-upgrading). Refreshing does not remove imported servers or revoke approvals.
+
+---
+
 ## 🛠️ Workflow & Core Features
 
 ### 1. Let ChatGPT Work Directly on Local Projects
@@ -192,6 +200,18 @@ Work performed by ChatGPT and DSH is retained in Work History:
 </p>
 
 Even after leaving the original Conversation, you can return later and find the work again.
+
+---
+
+## 🔌 MCP Server Integration
+
+The **MCP Servers** view in DSH with ChatGPT lets you reuse MCP servers configured in Codex or Claude:
+
+* Manually **Scan** and **Import** under **Discover MCPs**.
+* Enable or disable imported servers in **My MCP Servers**.
+* Configure required environment values, HTTP credentials and supported authentication, and inspect connection or discovery failure states.
+
+DSH shares the production management component with Chrome and reads authoritative Agent Helm Core MCP state. ChatGPT uses approved upstream tools through Agent Helm without connecting each server separately.
 
 ---
 

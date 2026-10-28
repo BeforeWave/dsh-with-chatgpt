@@ -104,6 +104,14 @@ dsh web
 
 ---
 
+### 升级后刷新 ChatGPT Connector Tools
+
+本次 **MCP Server Integration** 对应的 Agent Helm Core 修改了 MCP Tool Schema，将 `external_mcp_search_tools` 替换为 `external_mcp_list_tools`。**升级并重启 Core 后，必须在 ChatGPT 自定义 Connector 中执行 Refresh Tools。**
+
+如果出现工具不存在、参数 Schema 或 Contract 不匹配，请先核对 Core 版本并刷新。详情见 [Agent Helm 升级说明](https://github.com/BeforeWave/agent-helm#refresh-chatgpt-connector-tools-after-upgrading)。刷新不会删除已导入的 Server 或撤销授权。
+
+---
+
 ## 🛠️ 工作流与核心功能
 
 ### 1. ChatGPT 自己处理本地项目
@@ -193,6 +201,18 @@ ChatGPT 和 DSH 的工作会保留在 Work History 中：
 </p>
 
 离开原来的 Conversation 后，也可以重新找到这项工作。
+
+---
+
+## 🔌 MCP Server Integration
+
+DSH with ChatGPT 的 **MCP Servers** 管理入口可以复用 Codex 和 Claude 中已有的 MCP Server：
+
+* 在 **Discover MCPs** 中手动 Scan 并 Import。
+* 在 **My MCP Servers** 中启用或停用已导入的 Server。
+* 按需配置环境变量、HTTP 凭据和认证，查看连接及扫描失败状态。
+
+DSH 与 Chrome Extension 共用生产管理组件，使用 Agent Helm Core 的统一 MCP 状态。ChatGPT 通过 Agent Helm 使用已授权的上游工具，无需为每个 Server 单独创建 Connector。
 
 ---
 
