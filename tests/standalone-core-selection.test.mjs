@@ -70,7 +70,7 @@ test('Host socket is not fabricated without Host HOME', async () => {
 })
 
 test('real Core protocol ping attaches a live Host Core rather than spawning a competing dev Core', { skip: process.platform === 'win32' }, async () => {
-  const home = await mkdtemp(join(tmpdir(), 'h'))
+  const home = await mkdtemp(process.platform === 'darwin' ? './h' : join(tmpdir(), 'h'))
   const socket = defaultDaemonEndpoint(home)
   await mkdir(dirname(socket), { recursive: true })
   const server = new AdapterRpcServer({ socket, agents: new AgentRegistry() })

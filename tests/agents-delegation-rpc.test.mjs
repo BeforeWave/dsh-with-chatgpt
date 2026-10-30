@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { AdapterRpcClient, AdapterRpcServer, AgentRegistry, ControlRpcClient } from '@beforewave/agent-helm'
 
 test('DSH and Chrome clients mutate and observe the same Core delegation authority', { skip: process.platform === 'win32' }, async () => {
-  const home = await mkdtemp(join(tmpdir(), 'da'))
+  const home = await mkdtemp(process.platform === 'darwin' ? './da' : join(tmpdir(), 'da'))
   const socket = join(home, 'rpc.sock')
   const agents = new AgentRegistry()
   agents.register({ id: 'codex', displayName: 'Codex', capabilities: {}, async health() { return { status: 'ok' } } })
