@@ -58,7 +58,20 @@ export class ManagedDaemon {
     this.#child = child
     child.on('error', (error) => { this.#childError = error })
     child.stdout?.on('data', (chunk: Buffer) => this.options.onStdout?.(chunk.toString('utf8')))
-    child.stderr?.on('data', (chunk: Buffer) => this.options.onStderr?.(chunk.toString('utf8')))
+    // A live control socket is NOT proof that Core has finished booting:
+    // Core creates its RPC socket before starting the HTTP listener. If that
+    // listener fails (for example, EADDRINUSE at 3457), an early RPC client
+    // connects and is immediately disconnected. The CLI prints this exact
+    // marker only after CoreRuntime.start() succeeds completely.
+    const readyMarker = `agent-helm: adapter socket ${this.options.socket}`
+    let stderrTail = ''
+    let bootCompleted = false
+    child.stderr?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString('utf8')
+      stderrTail = (stderrTail + text).slice(-Math.max(8192, readyMarker.length + 100))
+      if (stderrTail.includes(readyMarker + '\n')) bootCompleted = true
+      this.options.onStderr?.(text)
+    })
 
     const deadline = Date.now() + (this.options.startupTimeoutMs ?? 20_000)
     while (Date.now() < deadline) {
@@ -67,10 +80,10 @@ export class ManagedDaemon {
         this.#child = undefined
         throw new Error(`managed Agent Helm daemon process failed: ${childError.message}`)
       }
-      if (await probeDaemon(this.options.socket)) return
-      if (child.exitCode !== null) {
+      if (bootCompleted && await probeDaemon(this.options.socket)) return
+      if (child.exitCode !== null || child.signalCode !== null) {
         this.#child = undefined
-        throw new Error(`managed Agent Helm daemon exited with code ${String(child.exitCode)}`)
+        throw new Error(`managed Agent Helm daemon exited before full startup (code=${String(child.exitCode)}, signal=${String(child.signalCode)})`)
       }
       await new Promise((resolve) => setTimeout(resolve, 100))
     }

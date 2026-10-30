@@ -67,6 +67,7 @@ async function buildStandaloneDevelopmentArtifacts() {
     target: 'node24',
     minify: true,
     outfile: join(packageRoot, 'lib/cli.js'),
+    external: ['@beforewave/agent-helm'],
     logLevel: 'silent',
   })
   await import('./build-standalone.mjs')

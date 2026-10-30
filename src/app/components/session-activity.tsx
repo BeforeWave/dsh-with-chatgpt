@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChatSessionTimelineItem } from '@beforewave/agent-helm'
-import { IntentRow, WorkHistoryActivityTimeline, WorkHistoryIntentDetail, WorkHistoryIntentList, WorkHistoryRow, installWorkHistoryUiStyles, workHistoryIntentTitle, type WorkHistoryActivityRowData } from '../../__shared/work-history-ui/index.js'
+import type { ChatSessionTimelineItem, DelegatedSession } from '@beforewave/agent-helm'
+import { AgentSessionList, IntentRow, WorkHistoryActivityTimeline, WorkHistoryIntentDetail, WorkHistoryIntentList, WorkHistoryRow, installWorkHistoryUiStyles, workHistoryIntentTitle, type WorkHistoryActivityRowData } from '../../__shared/work-history-ui/index.js'
 import { createWorkHistoryIntentActivityScopes, filterWorkHistoryTimelineByIntentScope, mergeWorkHistorySessionPage } from '../../__shared/work-history-ui/model.js'
 import { normalizeWorkHistorySessions, normalizeWorkHistoryTimelinePresentation, type WorkHistoryPresentationLabel, type WorkHistorySession } from '../../ui-contract.js'
 import { createWorkHistorySessionDetailModel, createWorkHistorySessionListModel, loadWorkHistoryConversationTimeline, mergeWorkHistoryConversationTimelineUpdates } from '../work-history.js'
@@ -59,6 +59,10 @@ export interface SessionActivityLabels {
   statusCancelled: string
   statusUnknown: string
   subagentSessionId: string
+  agentSessions: string
+  openTerminal: string
+  openingTerminal: string
+  approvalTerminalHint: string
   noSessions: string
   noTimeline: string
   loading: string
@@ -154,6 +158,7 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const [workspaceFilter, setWorkspaceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string>()
   const [timeline, setTimeline] = useState<ChatSessionTimelineItem[]>([])
+  const [agentSessions, setAgentSessions] = useState<Array<DelegatedSession & { owningWorkId: string }>>([])
   const [contextExpanded, setContextExpanded] = useState(false)
   const [selectedIntentRef, setSelectedIntentRef] = useState<{ sessionId: string; scopeId: string }>()
   const [copied, setCopied] = useState(false)
@@ -173,6 +178,15 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
   const workspaceOptions = sessionList.workspace.options
   const selected = sessionList.selected
   const selectedMemberIds = selected ? (selected.memberSessionIds?.length ? selected.memberSessionIds : [selected.id]) : []
+  useEffect(() => {
+    let active = true
+    setAgentSessions([])
+    if (!selectedMemberIds.length || !adapter.getSessionDelegations) return () => { active = false }
+    void Promise.all(selectedMemberIds.map(async (id) => (await adapter.getSessionDelegations!(id)).map((item) => ({ ...item, owningWorkId: id })))).then((parts) => {
+      if (active) setAgentSessions(parts.flat())
+    }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : String(cause)) })
+    return () => { active = false }
+  }, [adapter, selectedMemberIds.join('\u0000')])
   const selectedMembersKey = selectedMemberIds.join('\u0000')
   const selectedDetail = useMemo(() => selected ? createWorkHistorySessionDetailModel(selected) : undefined, [selected])
   const intentHistory = selectedDetail?.intentHistory ?? []
@@ -445,6 +459,13 @@ export function SessionActivityPanel({ labels, onClose, adapter }: { labels: Ses
                     <div className="dshHelmSessionFactLabel">{labels.workspace}</div><div>{selectedDetail?.workspaceLabel ?? labels.unassignedWorkspace}</div>
                   </div>
                 </section>
+                <AgentSessionList sessions={agentSessions}
+                  labels={{ title: labels.agentSessions, open: labels.openTerminal, waiting: labels.approvalTerminalHint, pending: labels.openingTerminal }}
+                  onOpen={async (nativeId) => {
+                    const owner = agentSessions.find((item) => item.subagentId === 'codex' && item.subagentSessionId === nativeId)
+                    if (!owner || !adapter.openAgentSessionInTerminal) throw new Error('Terminal handoff is unavailable')
+                    await adapter.openAgentSessionInTerminal(owner.owningWorkId, nativeId)
+                  }} />
                 <section className="dshHelmSessionContext" data-expanded={contextExpanded} aria-label={labels.workContext}>
                   <div className="dshHelmSessionContextTitleRow">
                     <button type="button" className="dshHelmSessionContextToggle" aria-expanded={contextExpanded} onClick={() => setContextExpanded((value) => !value)}>

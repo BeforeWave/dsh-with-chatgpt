@@ -1,5 +1,5 @@
 export type OAuthClientSetup = { grantType: 'authorization_code' | 'client_credentials'; clientId?: string; clientSecret?: string; clientMetadataUrl?: string; scope?: string }
-import type { ChatSessionSummary, ChatSessionSummaryPage, ChatSessionTimelineItem, ExternalMcpPublicServer, ExternalMcpScanResult } from '@beforewave/agent-helm'
+import type { DelegatedSession, ChatSessionSummary, ChatSessionSummaryPage, ChatSessionTimelineItem, ExternalMcpPublicServer, ExternalMcpScanResult } from '@beforewave/agent-helm'
 import type { TunnelSetupValues } from '../ui-contract.js'
 import type { HelmUiDependencyName, HelmUiStatus } from '../runtime/status.js'
 
@@ -19,6 +19,7 @@ export interface HelmStatusAdapter {
   configureTunnel(input: TunnelSetupValues): Promise<HelmUiStatus>
   setCoreEnabled(enabled: boolean): Promise<HelmUiStatus>
   setLocalMcpEnabled(enabled: boolean): Promise<HelmUiStatus>
+  setAgentDelegationEnabled(agentId: string, enabled: boolean): Promise<HelmUiStatus>
   setNativeAgentEnabled(agent: 'codex' | 'claude', enabled: boolean): Promise<HelmUiStatus>
   setExternalAgentLspEnabled(enabled: boolean): Promise<HelmUiStatus>
   setExternalUserAccess(capability: HelmExternalCapability, enabled: boolean): Promise<HelmUiStatus>
@@ -30,6 +31,8 @@ export interface HelmSessionAdapter {
   getSession(sessionId: string): Promise<ChatSessionSummary>
   openUrl(url: string): void
   getSessionTimeline(sessionId: string): Promise<ChatSessionTimelineItem[]>
+  getSessionDelegations?(sessionId: string): Promise<DelegatedSession[]>
+  openAgentSessionInTerminal?(contextId: string, nativeId: string): Promise<unknown>
   subscribeWorkHistoryChanges(onChanged: () => void, onError?: (error: Error) => void): () => void
   subscribeSessionTimeline(
     sessionId: string,
@@ -348,6 +351,12 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
         body: JSON.stringify({ target: 'localMcp', enabled }),
       })
     },
+    async setAgentDelegationEnabled(agentId, enabled) {
+      return await request<HelmUiStatus>(statusUrl, {
+        method: 'POST',
+        body: JSON.stringify({ target: 'agentDelegation', agentId, enabled }),
+      })
+    },
     async setNativeAgentEnabled(agent, enabled) {
       return await request<HelmUiStatus>(statusUrl, {
         method: 'POST',
@@ -373,6 +382,12 @@ export function createHttpHelmUiAdapter(baseUrl = '', accessToken?: string): Hel
     },
     async getSession(sessionId) {
       return (await request<{ session: ChatSessionSummary }>(`${sessionUrl}/${encodeURIComponent(sessionId)}`)).session
+    },
+    async getSessionDelegations(sessionId) {
+      return (await request<{ delegations: DelegatedSession[] }>(`${sessionUrl}/${encodeURIComponent(sessionId)}/delegations`)).delegations
+    },
+    async openAgentSessionInTerminal(contextId, nativeId) {
+      return await request(`${sessionUrl}/${encodeURIComponent(contextId)}/open`, { method: 'POST', body: JSON.stringify({ nativeSessionId: nativeId }) })
     },
     async getSessionTimeline(sessionId) {
       return (await request<{ timeline: ChatSessionTimelineItem[] }>(`${sessionUrl}/${encodeURIComponent(sessionId)}/timeline`)).timeline

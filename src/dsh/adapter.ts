@@ -11,7 +11,7 @@ import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
 import type { Workspace } from '@deepseek-ai/dsh-workspace'
 import type {
   AgentAdapter,
-  CreateSessionInput,
+  StartSessionInput,
   SessionDetail,
   SessionSummary,
   AdapterWorkspaceRef,
@@ -255,7 +255,7 @@ export class DshAdapter implements AgentAdapter {
     return created
   }
 
-  async createSession(input: CreateSessionInput, signal?: AbortSignal): Promise<SessionDetail> {
+  async startSession(input: StartSessionInput, signal?: AbortSignal): Promise<SessionDetail> {
     const workspace = await this.#resolveWorkspaceForCreate(input.workspace, signal)
     const sessionId = `session-${randomUUID()}`
     const composition = await this.#composeSetup(undefined, signal)
@@ -373,12 +373,12 @@ export class DshAdapter implements AgentAdapter {
     }
   }
 
-  async resumeSession(sessionId: string, signal?: AbortSignal): Promise<SessionDetail> {
+  async attachSession(sessionId: string, signal?: AbortSignal): Promise<SessionDetail> {
     await this.#ensureAgent(sessionId, signal)
     return await this.getSession(sessionId, 20, signal)
   }
 
-  async prompt(sessionId: string, message: string, signal?: AbortSignal): Promise<{ accepted: true; sessionId: string }> {
+  async send(sessionId: string, message: string, signal?: AbortSignal): Promise<{ accepted: true; sessionId: string }> {
     if (!message.trim()) throw new Error('message must not be empty')
     const agent = await this.#ensureAgent(sessionId, signal)
     signal?.throwIfAborted()

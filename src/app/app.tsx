@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { deriveHelmConnectionHealth, tunnelOnboardingSource, tunnelSetupCanSubmit, type TunnelSetupValues } from '../ui-contract.js'
 import { helmUiDictionaries, type HelmLocaleKey, type HelmTranslate } from './locale.js'
+import { AgentIdentityIcon } from '../__shared/ui-contract/agent-icon.js'
+import { statusPanelAnchor } from './panel-layout.js'
 import { deriveHelmCapabilitySummary, getHelmCapabilityDefinition, shouldCompactHelmCapabilitySummary } from './presentation.js'
 import {
   Button,
@@ -33,8 +35,8 @@ const css = `
 .dshHelmLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}
 .dshHelmTriggerCaps{flex:none;display:inline-flex;align-items:center;gap:2px;font-size:12px;line-height:1}
 .dshHelmTriggerIssue{width:16px;height:16px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-error-primary)}
-.dshHelmPanel{z-index:30;box-sizing:border-box;width:100%;max-width:calc(100vw - 24px);padding:4px;border:1px solid var(--dsw-alias-border-inverted);border-radius:12px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;position:fixed;overflow:visible}
-.dshHelmBody{display:flex;flex-direction:column;gap:0}
+.dshHelmPanel{z-index:30;box-sizing:border-box;width:100%;max-width:calc(100vw - 24px);max-height:calc(100dvh - 16px);padding:4px;border:1px solid var(--dsw-alias-border-inverted);border-radius:12px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;position:fixed;overflow:visible}
+.dshHelmBody{display:flex;flex-direction:column;gap:0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .dshHelmRow{box-sizing:border-box;min-height:50px;width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 11px;position:relative;border-bottom:0}
 .dshHelmRow::after{content:"";position:absolute;left:11px;right:8px;bottom:0;border-bottom:1px solid var(--dsw-alias-border-l2);pointer-events:none}
 .dshHelmRow:last-child::after{display:none}
@@ -93,6 +95,9 @@ const css = `
 .dshHelmSubRow:last-child::after{display:none}
 .dshHelmSubName{min-width:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
 .dshHelmSubIcon{display:inline-flex;width:20px;justify-content:flex-start;align-items:center;margin-right:2px}
+.dshHelmAgentSummary{min-width:0;display:inline-flex;align-items:center;gap:3px;overflow:hidden}.dshHelmAgentSummary .dshHelmAgentMark{margin-right:0}
+.dshHelmAgentMark{box-sizing:border-box;width:22px;height:22px;display:inline-flex;flex:none;align-items:center;justify-content:center;color:var(--dsw-alias-label-secondary);margin-right:7px}
+.dshHelmSubRow>.dshHelmAgentMark{width:20px;height:20px;margin-right:0}
 .dshHelmSessionEntry{cursor:pointer;background:transparent;color:inherit;text-align:left;font:inherit;border-left:0;border-right:0;border-top:0}.dshHelmSessionEntry:hover{background:transparent}.dshHelmSessionEntryTitle{min-width:0;flex:1;font-size:14px;line-height:22px}.dshHelmSessionEntryArrow{box-sizing:border-box;width:28px;height:28px;flex:none;border-radius:50%;color:var(--dsw-alias-label-tertiary);display:inline-flex;align-items:center;justify-content:center}.dshHelmSessionEntry:hover .dshHelmSessionEntryArrow{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshHelmCapabilityRow{cursor:pointer;border:0;background:transparent;color:inherit;text-align:left;font:inherit}
 .dshHelmCapabilityRow:hover{background:transparent}
@@ -189,7 +194,7 @@ export interface ChatGPTHelmAppProps {
 export type HelmPanelProps = ChatGPTHelmAppProps
 
 type HelmIssue = { title: string; detail?: string }
-type HelmUpdateTarget = 'core' | 'localMcp' | 'nativeAgent' | 'externalAgentLsp' | 'externalAccess' | 'tunnelSetup'
+type HelmUpdateTarget = 'agentDelegation' | 'core' | 'localMcp' | 'nativeAgent' | 'externalAgentLsp' | 'externalAccess' | 'tunnelSetup'
 type CodeSenseSwitch = 'externalAgentLsp' | 'localMcp' | 'codex' | 'claude'
 type HelmCapabilitySummaryItem = { icon: string; label: string }
 
@@ -490,6 +495,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [status, setStatus] = useState<HelmUiStatus | undefined>()
   const [error, setError] = useState<{ target: 'status' | HelmUpdateTarget | 'codeRead' | 'codeWrite' | 'agentDelegation' | 'serena' | 'tunnelClient'; detail: string }>()
   const [pendingTarget, setPendingTarget] = useState<HelmUpdateTarget>()
+  const [pendingAgentId, setPendingAgentId] = useState<string>()
   const [pendingCodeSense, setPendingCodeSense] = useState<Partial<Record<CodeSenseSwitch, boolean>>>({})
   // Keep the other switches usable while serializing their state writes.
   const codeSenseUpdates = useRef<Promise<void>>(Promise.resolve())
@@ -497,7 +503,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [pendingInstall, setPendingInstall] = useState<HelmUiDependencyName>()
   const [confirmCoreOff, setConfirmCoreOff] = useState(false)
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false)
-  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'codeSense' | 'mcpServers' | undefined>()
+  const [expandedRow, setExpandedRow] = useState<'capabilities' | 'agents' | 'codeSense' | 'mcpServers' | undefined>()
   const [tunnelPanelOpen, setTunnelPanelOpen] = useState(false)
   const [tunnelId, setTunnelId] = useState('')
   const [organizationId, setOrganizationId] = useState('')
@@ -505,7 +511,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
   const [proxyUrl, setProxyUrl] = useState('')
   const tunnelOnboardingAutoOpened = useRef(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number }>()
+  const [anchor, setAnchor] = useState<{ left: number; top?: number; bottom?: number; width: number; maxHeight: number }>()
 
   const refresh = useCallback(async () => {
     try {
@@ -521,7 +527,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     if (!open) return
     const place = () => {
       const rect = rootRef.current?.getBoundingClientRect()
-      if (rect) setAnchor({ left: rect.left, bottom: window.innerHeight - rect.top + 8, width: Math.round(rect.width) })
+      if (rect) setAnchor(statusPanelAnchor(rect, { width: window.innerWidth, height: window.innerHeight }))
     }
     place()
     window.addEventListener('resize', place)
@@ -607,6 +613,18 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
+  const setAgentEnabled = async (agentId: string, enabled: boolean) => {
+    setPendingAgentId(agentId)
+    try {
+      setStatus(await adapter.setAgentDelegationEnabled(agentId, enabled))
+      setError(undefined)
+    } catch (cause) {
+      setError({ target: 'agentDelegation', detail: requestErrorDetail(cause, t) })
+    } finally {
+      setPendingAgentId(undefined)
+    }
+  }
+
   const setCodeSenseEnabled = (target: CodeSenseSwitch, enabled: boolean) => {
     setPendingCodeSense((current) => ({ ...current, [target]: true }))
     const update = codeSenseUpdates.current.then(async () => {
@@ -670,7 +688,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     }
   }
 
-  const toggleRow = (row: 'capabilities' | 'codeSense' | 'mcpServers') => {
+  const toggleRow = (row: 'capabilities' | 'agents' | 'codeSense' | 'mcpServers') => {
     setExpandedRow((current) => current === row ? undefined : row)
   }
   const tunnelManagementUrl = status?.tunnel.state === 'running' ? status.tunnel.adminUrl : undefined
@@ -685,6 +703,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
     : undefined
   const effectivePolicy = status?.effectiveExternalAccess ?? { enabled: false, mutations: false, delegation: false }
   const configuredPolicy = status?.externalUserAccess ?? { enabled: false, mutations: false, delegation: false }
+  const agents = status?.agents ?? []
   const serenaUnavailable = status?.dependencies.serena.state === 'unavailable'
   const codeSenseState: HelmUiRuntimeState = !status
     ? 'unavailable'
@@ -768,6 +787,39 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
 
                 />
                 <StatusRow
+                  name={t('agents')}
+                  nameExtra={<span className="dshHelmAgentSummary" aria-hidden="true">{agents.filter((agent) => agent.enabled).map((agent) => (
+                    <span className="dshHelmAgentMark" key={agent.id} title={agent.name}><AgentIdentityIcon name={agent.name} {...(agent.iconDataUrl ? { iconDataUrl: agent.iconDataUrl } : {})} /></span>
+                  ))}</span>}
+                  description={t('agentsDescription')}
+                  state={agents.some((agent) => agent.enabled) ? 'running' : 'stopped'}
+                  t={t}
+                  wholeRow
+                  toggleOnName={false}
+                  onToggle={() => toggleRow('agents')}
+                  expanded={expandedRow === 'agents'}
+                  detailsId="dshHelmAgentsDetails"
+                  detailsClassName="dshHelmGroupBody"
+                  details={agents.length === 0 ? (
+                    <div className="dshHelmSubRow"><span className="dshHelmSubName">{t('noLocalAgents')}</span></div>
+                  ) : <>
+                    {agents.map((agent) => (
+                      <div className="dshHelmSubRow" key={agent.id}>
+                        <span className="dshHelmAgentMark" aria-hidden="true"><AgentIdentityIcon name={agent.name} {...(agent.iconDataUrl ? { iconDataUrl: agent.iconDataUrl } : {})} /></span>
+                        <span className="dshHelmSubName" title={agent.message}>{agent.name}</span>
+                        <StatusSwitch
+                          enabled={agent.enabled}
+                          disabled={status.core.state !== 'running' || !agent.configurable || pendingTarget !== undefined || pendingAgentId !== undefined}
+                          label={`Toggle ${agent.name} delegation`}
+                          onChange={(enabled) => { void setAgentEnabled(agent.id, enabled) }}
+                        />
+                      </div>
+                    ))}
+                    {error?.target === 'agentDelegation' ? <div className="dshHelmDetails"><p className="dshHelmDetailsText dshHelmOperationError" data-error="true">{error.detail}</p></div> : null}
+                  </>}
+                  control={<ExpandChevron expanded={expandedRow === 'agents'} />}
+                />
+                <StatusRow
                   name={t('codeSense')}
                   nameExtra={<span className="dshHelmInlineState" role="img" aria-label={t(stateKey(codeSenseState))}><StateDot state={dotState(codeSenseState)} size={8} /></span>}
                   description={t('codeSenseDescription')}
@@ -791,7 +843,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                         />
                       </div>
                       <div className="dshHelmSubRow">
-                        <span className="dshHelmSubName">DSH</span>
+                        <span className="dshHelmAgentMark" aria-hidden="true"><AgentIdentityIcon name="DSH" /></span><span className="dshHelmSubName">DSH</span>
                         <StatusSwitch
                           enabled={!serenaUnavailable && status.localMcp.state === 'running'}
                           disabled={serenaUnavailable || status.core.state !== 'running' || pendingTarget !== undefined || Boolean(pendingCodeSense.localMcp)}
@@ -803,6 +855,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
                         const native = status.nativeAgents?.[agent]
                         return (
                           <div className="dshHelmSubRow" key={agent}>
+                            <span className="dshHelmAgentMark" aria-hidden="true"><AgentIdentityIcon name={agent === 'codex' ? 'Codex' : 'Claude Code'} {...(native?.iconDataUrl ? { iconDataUrl: native.iconDataUrl } : {})} /></span>
                             <span className="dshHelmSubName" title={native?.message ?? (native?.installed === false ? 'Not installed' : native?.installed === undefined ? 'Restart Agent Helm Core to detect local agents' : undefined)}>{agent === 'codex' ? 'Codex' : 'Claude Code'}{native?.installed === false ? ' (not installed)' : native?.installed === undefined ? ' (Core update required)' : ''}</span>
                             <StatusSwitch
                               enabled={!serenaUnavailable && Boolean(native?.enabled)}
@@ -936,7 +989,7 @@ export function ChatGPTHelmApp({ wide, t, adapter, initiallyOpen = false }: Chat
             delegationAttached: t('sessionDelegationAttached'), delegationPrompted: t('sessionDelegationPrompted'), delegationResumed: t('sessionDelegationResumed'),
             delegationStatus: t('sessionDelegationStatus'), statusIdle: t('sessionStatusIdle'), statusRunning: t('sessionStatusRunningAgent'), statusWaiting: t('sessionStatusWaiting'),
             statusFailed: t('sessionStatusFailedAgent'), statusCancelled: t('sessionStatusCancelled'), statusUnknown: t('sessionStatusUnknown'),
-            subagentSessionId: t('sessionSubagentId'), noSessions: t('sessionNone'), noTimeline: t('sessionNoTimeline'), loading: t('sessionLoading'),
+            subagentSessionId: t('sessionSubagentId'), agentSessions: t('sessionAgentSessions'), openTerminal: t('sessionOpenTerminal'), openingTerminal: t('sessionOpeningTerminal'), approvalTerminalHint: t('sessionApprovalTerminalHint'), noSessions: t('sessionNone'), noTimeline: t('sessionNoTimeline'), loading: t('sessionLoading'),
             loadError: t('sessionLoadError'), unassignedWorkspace: t('sessionUnassignedWorkspace'), linked: t('sessionLinked'), unlinked: t('sessionUnlinked'), expand: t('sessionExpand'), collapse: t('sessionCollapse'), intents: t('sessionIntents'), conversation: t('sessionConversation'),
           }}
         />

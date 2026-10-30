@@ -5,7 +5,42 @@ export { filterWorkHistoryActivityItems, sortWorkHistoryActivityItemsNewestFirst
 
 const STYLE_ID = '@beforewave/agent-helm/work-history-ui'
 
+export interface AgentSessionRowData {
+  subagentSessionId: string
+  subagentId: string
+  title?: string
+  status?: string
+  association: 'created' | 'attached'
+}
+
+export function AgentSessionList({ sessions, onOpen, labels }: {
+  sessions: AgentSessionRowData[]
+  onOpen: (nativeSessionId: string) => Promise<void>
+  labels: { title: string; open: string; waiting: string; pending: string }
+}) {
+  const [opening, setOpening] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const codexSessions = sessions.filter((item) => item.subagentId === 'codex' && item.association === 'created')
+  if (!codexSessions.length) return null
+  return <section className="helm-work-history-ui agent-sessions">
+    <h2>{labels.title}</h2>
+    {codexSessions.map((session) => <div key={session.subagentSessionId} className="agent-session-row">
+      <div className="agent-session-info"><strong>Codex · {session.title || session.subagentSessionId}</strong>
+        <span title={session.subagentSessionId}>{session.subagentSessionId}</span>
+        {session.status === 'waiting' ? <em>{labels.waiting}</em> : null}
+      </div>
+      <button type="button" disabled={opening !== null} onClick={() => {
+        setOpening(session.subagentSessionId); setError(null)
+        void onOpen(session.subagentSessionId).catch((cause) => setError(cause instanceof Error ? cause.message : String(cause))).finally(() => setOpening(null))
+      }}>{opening === session.subagentSessionId ? labels.pending : labels.open}</button>
+    </div>)}
+    {error ? <p role="alert" className="agent-session-error">{error}</p> : null}
+  </section>
+}
+
 export const workHistoryUiCss = `
+.helm-work-history-ui.agent-sessions{border-bottom:1px solid var(--helm-border);padding:12px 20px}.helm-work-history-ui.agent-sessions h2{font-size:13px;line-height:20px;font-weight:650;margin:0 0 8px}.helm-work-history-ui .agent-session-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--helm-border)}.helm-work-history-ui .agent-session-info{min-width:0;display:flex;flex-direction:column;gap:3px;font-size:12px;overflow-wrap:anywhere}.helm-work-history-ui .agent-session-info span{color:var(--helm-secondary);font-size:11px;word-break:break-all}.helm-work-history-ui .agent-session-info em{color:var(--helm-secondary);font-style:normal}.helm-work-history-ui .agent-session-row button{flex:none;border:1px solid var(--helm-border);border-radius:7px;background:transparent;padding:6px 10px;color:inherit;font-size:12px;line-height:18px;font-weight:600;cursor:pointer}.helm-work-history-ui .agent-session-row button:hover{background:var(--helm-hover)}.helm-work-history-ui .agent-session-row button:disabled{opacity:.5;cursor:default}.helm-work-history-ui .agent-session-error{color:#b13c3c;font-size:12px;margin:6px 0}
+
 .helm-work-history-ui.work-card{box-sizing:border-box;width:100%;padding:12px 20px;border:0;border-bottom:1px solid var(--helm-border);border-radius:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;transition:background-color .12s ease}.helm-work-history-ui.work-card:last-child{border-bottom:0}.helm-work-history-ui.work-card--current{background:var(--helm-hover)}.helm-work-history-ui.work-card:hover,.helm-work-history-ui.work-card:focus-visible{background:var(--helm-hover);outline:none}.helm-work-history-ui .work-card__title{min-width:0;display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;text-overflow:ellipsis;font-size:13px;line-height:19px;font-weight:620}.helm-work-history-ui .work-card__meta{min-width:0;margin-top:5px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--helm-secondary);font-size:11px;line-height:17px}.helm-work-history-ui .work-card__meta time{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.helm-work-history-ui .work-card__linked-state{flex:none;font-weight:600}.helm-work-history-ui .work-card__linked-state--linked{font-weight:650;color:var(--helm-business)}
 .helm-work-history-ui.context-card{box-sizing:border-box;min-width:0;width:100%;padding:12px 20px;border:0;border-bottom:1px solid var(--helm-border);border-radius:0;background:transparent;color:inherit;text-align:left;font:inherit;transition:background-color .12s ease}.helm-work-history-ui.context-card:last-child{border-bottom:0}.helm-work-history-ui.context-card:hover,.helm-work-history-ui.context-card:focus-visible{background:var(--helm-hover);outline:none}.helm-work-history-ui.context-card--clickable{cursor:pointer}.helm-work-history-ui .context-card__title{min-width:0;display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;font-size:13px;line-height:19px;font-weight:650}.helm-work-history-ui .context-card__preview{min-width:0;margin-top:4px;display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;color:var(--helm-secondary);font-size:12px;line-height:18px}
 .helm-work-history-ui.intent-list{box-sizing:border-box;width:100%;max-height:240px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;border-top:1px solid var(--helm-border);border-bottom:1px solid var(--helm-border)}

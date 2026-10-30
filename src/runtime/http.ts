@@ -155,6 +155,12 @@ export async function handleHelmStatusRequest(runtime: ChatGPTHelmRuntime, req: 
         }))
         return
       }
+      if (body.target === 'agentDelegation') {
+        if (typeof body.agentId !== 'string' || !body.agentId.trim()) throw new Error('agentId must be a non-empty string')
+        if (typeof body.enabled !== 'boolean') throw new Error('enabled must be boolean')
+        json(res, 200, await runtime.setAgentDelegationEnabled(body.agentId, body.enabled))
+        return
+      }
       if (body.target === 'nativeAgent') {
         if (body.agent !== 'codex' && body.agent !== 'claude') throw new Error('agent must be codex or claude')
         if (typeof body.enabled !== 'boolean') throw new Error('enabled must be boolean')
@@ -199,6 +205,13 @@ export async function handleHelmSessionRequest(runtime: ChatGPTHelmRuntime, req:
       }
       res.setHeader('allow', 'GET')
       return json(res, 405, { error: 'method not allowed' })
+    }
+    if (req.method === 'POST' && parts.length === 2 && parts[1] === 'open') {
+      const sessionId = parts[0]!
+      if (!(await runtime.getSession(sessionId))) return json(res, 404, { error: 'ChatGPT session not found' })
+      const body = await readJson(req)
+      if (typeof body.nativeSessionId !== 'string' || !body.nativeSessionId.trim()) return json(res, 400, { error: 'nativeSessionId is required' })
+      return json(res, 200, await runtime.openAgentSessionInTerminal(sessionId, body.nativeSessionId))
     }
     if (req.method !== 'GET') {
       res.setHeader('allow', 'GET')

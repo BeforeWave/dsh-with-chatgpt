@@ -1,4 +1,5 @@
 import { homedir } from 'node:os'
+import { randomUUID } from 'node:crypto'
 import {
   AdapterRpcClient,
   defaultDaemonEndpoint,
@@ -72,6 +73,7 @@ export class ChatGPTHelmRuntime {
     const rpc = new AdapterRpcClient({
       socket: this.#coreSocket,
       adapter: this.options.host.adapter,
+      controlClientId: `dsh-ui:${this.options.host.adapter.id}:${randomUUID()}`,
       onWorkHistoryChanged: () => { for (const listener of [...this.#workHistorySubscribers]) listener() },
     })
     try {
@@ -79,19 +81,13 @@ export class ChatGPTHelmRuntime {
       this.#rpc = rpc
       this.#localMcp = this.options.host.createLocalMcp?.(rpc)
       await this.#localMcp?.syncFromCore().catch(() => {})
-      this.options.logger?.info(`dsh-with-chatgpt: adapter ${this.options.host.adapter.id} registered with Core`)
+      this.options.logger?.info(`dsh-with-chatgpt: UI control connected to Core`)
     } catch (error) {
       await this.#localMcp?.disable().catch(() => {})
       this.#localMcp = undefined
       await rpc.stop().catch(() => {})
       this.#rpc = undefined
       const message = error instanceof Error ? error.message : String(error)
-      if (message.includes(`agent adapter already registered: ${this.options.host.adapter.id}`)) {
-        throw new Error(
-          `dsh-with-chatgpt: adapter ${this.options.host.adapter.id} is already registered with Core; another DSH host is still connected. Stop the existing DSH process or configure a different adapterId before starting this profile.`,
-          { cause: error },
-        )
-      }
       throw error
     }
   }
@@ -300,6 +296,11 @@ export class ChatGPTHelmRuntime {
     return await this.getStatus()
   }
 
+  async setAgentDelegationEnabled(agentId: string, enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {
+    await this.rpc.setAgentDelegationEnabled(agentId, enabled)
+    return await this.getStatus()
+  }
+
   async setNativeAgentEnabled(agent: 'codex' | 'claude', enabled: boolean): Promise<ChatGPTHelmRuntimeStatus> {
     await this.rpc.setNativeAgentEnabled(agent, enabled)
     return await this.getStatus()
@@ -348,4 +349,5 @@ export class ChatGPTHelmRuntime {
   }
   async getSessionActivity(id: string): Promise<ChatSessionActivity[]> { return await this.rpc.getChatSessionActivity(id) }
   async getSessionDelegations(id: string): Promise<DelegatedSession[]> { return await this.rpc.getChatSessionDelegations(id) }
+  async openAgentSessionInTerminal(contextId: string, nativeId: string): Promise<{ launched: true; subagent_session_id: string }> { return await this.rpc.openAgentSessionInTerminal(contextId, 'codex', nativeId) }
 }
